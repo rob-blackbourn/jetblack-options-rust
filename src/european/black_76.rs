@@ -114,10 +114,7 @@ pub fn ivol(
 /// Returns:
 ///     NumericGreeks: A class which can generate Greeks using finite difference
 ///         methods.
-pub fn make_numeric_greeks<T>(is_call: bool) -> NumericGreeks
-where
-    T: Fn(f64, f64, f64, f64, f64) -> f64,
-{
+pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.
 
@@ -336,6 +333,8 @@ pub fn vomma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use libm::fabs;
 
     use super::*;
@@ -467,6 +466,77 @@ mod tests {
         ] {
             let actual = ivol(is_call, F, K, T, r, p, None, None);
             assert!(is_close_to(actual, expected, 1e-9));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_delta() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        for (is_call, F, K, r, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.8267860441956819,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.12444338030503208,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.4923803086739813,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.45884911582673277,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.14319868380006504,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.808030740700649,
+            ),
+        ] {
+            let analytic = delta(is_call, F, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numerical = ng[&is_call].delta(F, K, T, r, v, None, None);
+            assert!(is_close_to(numerical, analytic, 1e-6));
         }
     }
 }
