@@ -1,0 +1,14 @@
+{
+    "[rust]": {
+        "editor.formatOnSave": true
+    },
+    "cSpell.words": [
+        "fabs",
+        "ivol",
+        "libm",
+        "vanna",
+        "vomma",
+        "DdeltaDvol",
+        "DdeltaDtime"
+    ]
+}
