@@ -336,17 +336,16 @@ pub fn vomma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
+    use libm::fabs;
+
     use super::*;
 
-    fn is_close_to(a: f64, b: f64, decimal_places: u8) -> bool {
-        let factor = 10.0f64.powi(decimal_places as i32);
-        let a = (a * factor).trunc();
-        let b = (b * factor).trunc();
-        a == b
+    fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
+        fabs(actual - expected) < threshold
     }
 
     #[test]
-    fn it_should_price() {
+    fn it_should_calc_price() {
         for (is_call, F, K, T, r, v, expected) in [
             (
                 true,
@@ -404,7 +403,70 @@ mod tests {
             ),
         ] {
             let actual = price(is_call, F, K, T, r, v);
-            assert!(is_close_to(actual, expected, 12));
+            assert!(is_close_to(actual, expected, 1e-12));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_ivol() {
+        for (is_call, F, K, r, T, p, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                10.143390791460092,
+                0.125,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.6310965464529535,
+                0.125,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                3.3531192847248605,
+                0.125,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                3.3531192847248534,
+                0.125,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.6310965464529654,
+                0.125,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                10.143390791460092,
+                0.125,
+            ),
+        ] {
+            let actual = ivol(is_call, F, K, T, r, p, None, None);
+            assert!(is_close_to(actual, expected, 1e-9));
         }
     }
 }
