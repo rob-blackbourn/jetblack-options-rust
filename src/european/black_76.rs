@@ -117,7 +117,7 @@ pub fn ivol(
 pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.
-
+    #[allow(non_snake_case)]
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
 }
 
@@ -345,6 +345,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_price() {
+        #[allow(non_snake_case)]
         for (is_call, F, K, T, r, v, expected) in [
             (
                 true,
@@ -408,6 +409,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_ivol() {
+        #[allow(non_snake_case)]
         for (is_call, F, K, r, T, p, expected) in [
             (
                 true,
@@ -476,6 +478,7 @@ mod tests {
             (false, make_numeric_greeks(false)),
         ]);
 
+        #[allow(non_snake_case)]
         for (is_call, F, K, r, T, v, expected) in [
             (
                 true,
