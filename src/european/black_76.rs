@@ -114,11 +114,14 @@ pub fn ivol(
 /// Returns:
 ///     NumericGreeks: A class which can generate Greeks using finite difference
 ///         methods.
-fn make_numeric_greeks<'a>(is_call: bool) -> NumericGreeks<'a> {
+pub fn make_numeric_greeks<T>(is_call: bool) -> NumericGreeks
+where
+    T: Fn(f64, f64, f64, f64, f64) -> f64,
+{
     // Normalize the price function to match that required by the finite
     // difference methods.
 
-    NumericGreeks::new(&move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
+    NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
 }
 
 /// The sensitivity of the option to a change in the asset price
@@ -344,16 +347,64 @@ mod tests {
 
     #[test]
     fn it_should_price() {
-        // for is_call, F, K, r, T, v, expected in [
-        //     (True, 110, 100, 0.1, 6/12, 0.125, 10.143390791460092),
-        //     (False, 110, 100, 0.1, 6/12, 0.125, 0.6310965464529535),
-        //     (True, 100, 100, 0.1, 6/12, 0.125, 3.3531192847248605),
-        //     (False, 100, 100, 0.1, 6/12, 0.125, 3.3531192847248534),
-        //     (True, 100, 110, 0.1, 6/12, 0.125, 0.6310965464529654),
-        //     (False, 100, 110, 0.1, 6/12, 0.125, 10.143390791460092),
-        // ]:
-        let actual = price(true, 110.0, 100.0, 0.1, 6.0 / 12.0, 0.125)?;
-        let expected = 10.143390791460092;
-        assert!(is_close_to(actual, expected, 12));
+        for (is_call, F, K, T, r, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                6.0 / 12.0,
+                0.1,
+                0.125,
+                10.143390791460092,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                6.0 / 12.0,
+                0.1,
+                0.125,
+                0.6310965464529535,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                6.0 / 12.0,
+                0.1,
+                0.125,
+                3.3531192847248605,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                6.0 / 12.0,
+                0.1,
+                0.125,
+                3.3531192847248534,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                6.0 / 12.0,
+                0.1,
+                0.125,
+                0.6310965464529654,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                6.0 / 12.0,
+                0.1,
+                0.125,
+                10.143390791460092,
+            ),
+        ] {
+            let actual = price(is_call, F, K, T, r, v);
+            assert!(is_close_to(actual, expected, 12));
+        }
     }
 }

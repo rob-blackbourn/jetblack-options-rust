@@ -3,9 +3,9 @@
 
 // from typing import Callable, Literal
 
-pub struct NumericGreeks<'a> {
+pub struct NumericGreeks {
     /// fn price(S: 64, K: f64, T, r: f64, v: f64) -> f64
-    pub price: &'a dyn Fn(f64, f64, f64, f64, f64) -> f64,
+    pub price: Box<dyn Fn(f64, f64, f64, f64, f64) -> f64>,
 }
 
 pub enum DifferenceMethod {
@@ -14,9 +14,11 @@ pub enum DifferenceMethod {
     Forward,
 }
 
-impl<'a> NumericGreeks<'a> {
-    pub fn new(price: &'a dyn Fn(f64, f64, f64, f64, f64) -> f64) -> Self {
-        NumericGreeks { price }
+impl NumericGreeks {
+    pub fn new(price: impl Fn(f64, f64, f64, f64, f64) -> f64 + 'static) -> Self {
+        NumericGreeks {
+            price: Box::new(price),
+        }
     }
 
     #[allow(non_snake_case)]
