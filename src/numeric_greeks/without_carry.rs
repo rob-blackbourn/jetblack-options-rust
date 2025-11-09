@@ -1,17 +1,11 @@
 /// Class for calculating numeric greeks for options using finite difference
 /// methods for the style with no carry or dividend yield.
-
 // from typing import Callable, Literal
+use crate::numeric_greeks::DifferenceMethod;
 
 pub struct NumericGreeks {
     /// fn price(S: 64, K: f64, T, r: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64) -> f64>,
-}
-
-pub enum DifferenceMethod {
-    Central,
-    Backward,
-    Forward,
 }
 
 impl NumericGreeks {

@@ -1,3 +1,5 @@
-mod without_carry;
+mod constants;
+pub mod with_carry;
+pub mod without_carry;
 
-pub use without_carry::{DifferenceMethod, NumericGreeks};
+pub use constants::DifferenceMethod;

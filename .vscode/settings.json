@@ -3,12 +3,19 @@
         "editor.formatOnSave": true
     },
     "cSpell.words": [
+        "DdeltaDtime",
+        "DdeltaDvol",
+        "deltap",
+        "dgamma",
+        "Dvega",
+        "dvol",
         "fabs",
+        "gammap",
         "ivol",
         "libm",
+        "scholes",
         "vanna",
-        "vomma",
-        "DdeltaDvol",
-        "DdeltaDtime"
+        "vegap",
+        "vomma"
     ]
 }
