@@ -11,10 +11,12 @@
         "dvol",
         "fabs",
         "gammap",
+        "infty",
         "ivol",
         "libm",
         "scholes",
         "vanna",
+        "varphi",
         "vegap",
         "vomma"
     ]
