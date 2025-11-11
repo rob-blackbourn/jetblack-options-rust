@@ -41,8 +41,21 @@ fn r8poly_value(n: usize, a: &[f64], x: f64) -> f64 {
     return value;
 }
 
-pub fn inv_cdf(p: f64) -> f64 {
-    const a: [f64; 8] = [
+/// A function which computes the inverse of the Normal Cumulative Density
+/// Function (CDF), by Michael Wichura;
+///
+/// This is a version of Applied Statistics Algorithm 241.
+///
+/// Original FORTRAN version:
+///
+/// Michael Wichura,
+/// The Percentage Points of the Normal Distribution,
+/// Algorithm AS 241,
+/// Applied Statistics,
+/// Volume 37, Number 3, pages 477-484, 1988.
+///
+fn r8_normal_01_cdf_inverse(p: f64) -> f64 {
+    const A: [f64; 8] = [
         3.3871328727963666080,
         1.3314166789178437745e+2,
         1.9715909503065514427e+3,
@@ -52,7 +65,7 @@ pub fn inv_cdf(p: f64) -> f64 {
         3.3430575583588128105e+4,
         2.5090809287301226727e+3,
     ];
-    const b: [f64; 8] = [
+    const B: [f64; 8] = [
         1.0,
         4.2313330701600911252e+1,
         6.8718700749205790830e+2,
@@ -62,7 +75,7 @@ pub fn inv_cdf(p: f64) -> f64 {
         2.8729085735721942674e+4,
         5.2264952788528545610e+3,
     ];
-    const c: [f64; 8] = [
+    const C: [f64; 8] = [
         1.42343711074968357734,
         4.63033784615654529590,
         5.76949722146069140550,
@@ -72,9 +85,9 @@ pub fn inv_cdf(p: f64) -> f64 {
         2.27238449892691845833e-2,
         7.74545014278341407640e-4,
     ];
-    const const1: f64 = 0.180625;
-    const const2: f64 = 1.6;
-    const d: [f64; 8] = [
+    const CONST1: f64 = 0.180625;
+    const CONST2: f64 = 1.6;
+    const D: [f64; 8] = [
         1.0,
         2.05319162663775882187,
         1.67638483018380384940,
@@ -84,7 +97,7 @@ pub fn inv_cdf(p: f64) -> f64 {
         5.47593808499534494600e-4,
         1.05075007164441684324e-9,
     ];
-    const e: [f64; 8] = [
+    const E: [f64; 8] = [
         6.65790464350110377720,
         5.46378491116411436990,
         1.78482653991729133580,
@@ -94,7 +107,7 @@ pub fn inv_cdf(p: f64) -> f64 {
         2.71155556874348757815e-5,
         2.01033439929228813265e-7,
     ];
-    const f: [f64; 8] = [
+    const F: [f64; 8] = [
         1.0,
         5.99832206555887937690e-1,
         1.36929880922735805310e-1,
@@ -104,8 +117,8 @@ pub fn inv_cdf(p: f64) -> f64 {
         1.42151175831644588870e-7,
         2.04426310338993978564e-15,
     ];
-    const split1: f64 = 0.425;
-    const split2: f64 = 5.0;
+    const SPLIT1: f64 = 0.425;
+    const SPLIT2: f64 = 5.0;
 
     if p <= 0.0 {
         return -1.0E+30;
@@ -115,9 +128,9 @@ pub fn inv_cdf(p: f64) -> f64 {
 
     let q = p - 0.5;
 
-    if fabs(q) <= split1 {
-        let r = const1 - q * q;
-        return q * r8poly_value(8, &a, r) / r8poly_value(8, &b, r);
+    if fabs(q) <= SPLIT1 {
+        let r = CONST1 - q * q;
+        return q * r8poly_value(8, &A, r) / r8poly_value(8, &B, r);
     } else {
         let mut r = if q < 0.0 { p } else { 1.0 - p };
 
@@ -127,12 +140,12 @@ pub fn inv_cdf(p: f64) -> f64 {
 
         r = sqrt(-log(r));
 
-        let mut value = if r <= split2 {
-            r = r - const2;
-            r8poly_value(8, &c, r) / r8poly_value(8, &d, r)
+        let mut value = if r <= SPLIT2 {
+            r = r - CONST2;
+            r8poly_value(8, &C, r) / r8poly_value(8, &D, r)
         } else {
-            r = r - split2;
-            r8poly_value(8, &e, r) / r8poly_value(8, &f, r)
+            r = r - SPLIT2;
+            r8poly_value(8, &E, r) / r8poly_value(8, &F, r)
         };
 
         if q < 0.0 {
@@ -143,10 +156,13 @@ pub fn inv_cdf(p: f64) -> f64 {
     }
 }
 
+pub fn inv_cdf(x: f64) -> f64 {
+    r8_normal_01_cdf_inverse(x)
+}
+
 #[cfg(test)]
 mod tests {
     use core::f64;
-    use std::collections::HashMap;
 
     use libm::fabs;
 

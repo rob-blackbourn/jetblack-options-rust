@@ -3,12 +3,20 @@
         "editor.formatOnSave": true
     },
     "cSpell.words": [
+        "ddelta",
         "DdeltaDtime",
         "DdeltaDvol",
         "deltap",
         "dgamma",
+        "dgammap",
+        "driftless",
+        "dspot",
+        "dtime",
         "Dvega",
+        "dvegap",
         "dvol",
+        "dvomma",
+        "dzeta",
         "fabs",
         "gammap",
         "infty",
@@ -18,6 +26,8 @@
         "vanna",
         "varphi",
         "vegap",
-        "vomma"
+        "vomma",
+        "Wichura",
+        "zomma"
     ]
 }
