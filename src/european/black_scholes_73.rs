@@ -79,11 +79,13 @@ pub fn ivol(
     max_iterations: Option<i32>, // = 35,
     epsilon: Option<f64>,        // =1e-8
 ) -> f64 {
+    let max_iterations = max_iterations.unwrap_or(35);
+    let epsilon = epsilon.unwrap_or(1e-8);
     return solve_ivol(
         p,
         |v| price(is_call, S, K, T, r, v),
-        max_iterations,
-        epsilon,
+        Some(max_iterations),
+        Some(epsilon),
     );
 }
 
@@ -173,4 +175,740 @@ pub fn vomma(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
     vega(S, K, T, r, v) * d1 * d2 / v
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use libm::fabs;
+
+    use super::*;
+
+    fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
+        let diff = fabs(actual - expected);
+        diff < threshold
+    }
+
+    #[test]
+    fn it_should_calc_price() {
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                15.066208620179964,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.18915107025137257,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                6.413154785988965,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                1.536097236060364,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                1.7525027662779316,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                6.387739461356475,
+            ),
+        ] {
+            let actual = price(is_call, S, K, T, r, v);
+            assert!(is_close_to(actual, expected, 1e-12))
+        }
+    }
+
+    #[test]
+    fn it_should_calc_ivol() {
+        #[allow(non_snake_case)]
+        for (is_call, F, K, r, T, p, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                15.066208620179964,
+                0.125,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.18915107025137257,
+                0.125,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                6.413154785988965,
+                0.125,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                1.536097236060364,
+                0.125,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                1.7525027662779316,
+                0.125,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                6.387739461356475,
+                0.125,
+            ),
+        ] {
+            let actual = ivol(is_call, F, K, T, r, p, None, None);
+            assert!(is_close_to(actual, expected, 1e-6))
+        }
+    }
+
+    #[test]
+    fn it_should_calc_delta() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.9543127330810848,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.045687266918915226,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.7290292160988521,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.2709707839011479,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.3197378469845452,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.6802621530154548,
+            ),
+        ] {
+            let analytic = delta(is_call, S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].delta(S, K, T, r, v, None, None);
+            assert!(is_close_to(numeric, analytic, 1e-6))
+        }
+    }
+
+    #[test]
+    fn it_should_calc_gamma() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.009868587816478383,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.009868587816478383,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.037475415422440525,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.037475415422440525,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.040445177937028856,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                0.040445177937028856,
+            ),
+        ] {
+            let analytic = gamma(S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].gamma(S, K, T, r, v, None, None);
+            assert!(is_close_to(numeric, analytic, 1e-6));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_theta() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -9.923709143900409,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.41141489889326743,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -9.576743512267791,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -0.06444926726065026,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -6.181907719548038,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                4.281615949959816,
+            ),
+        ] {
+            let analytic = theta(is_call, S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].theta(S, K, T, r, v, None, None);
+            assert!(is_close_to(numeric, analytic, 1e-4));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_vega() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                7.463119536211778,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                7.463119536211778,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                23.42213463902533,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                23.42213463902533,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                25.278236210643035,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                25.278236210643035,
+            ),
+        ] {
+            let analytic = vega(S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].vega(S, K, T, r, v, None, None);
+            assert!(is_close_to(numeric, analytic, 1e-3));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_rho() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                44.954096009369676,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -2.6073752156660236,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                33.244883411948123,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -14.316587813087578,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                15.110640966088296,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                6.0 / 12.0,
+                0.125,
+                -37.20697738145098,
+            ),
+        ] {
+            let analytic = rho(is_call, S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].rho(S, K, T, r, v, None, None);
+            assert!(is_close_to(numeric, analytic, 1e-4));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_vanna() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -1.2280022470048304,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -1.2280022470048304,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -1.3819059437024943,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -1.3819059437024943,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                1.5924538086889684,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                1.5924538086889684,
+            ),
+        ] {
+            let analytic = vanna(S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].vanna(S, K, T, r, v, None, None);
+            assert!(is_close_to(numeric, analytic, 1e-4));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_charm() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.044945814894341574,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.044945814894341574,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.20201591126159346,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.20201591126159346,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.6035085054564097,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.6035085054564097,
+            ),
+        ] {
+            let analytic = charm(is_call, S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].charm(S, K, T, r, v, None, None);
+            assert!(is_close_to(numeric, analytic, 1e-5));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_vomma() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                161.24953775897959,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                161.24953775897959,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                59.59469382217008,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                59.59469382217008,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                52.74707656927028,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                52.74707656927028,
+            ),
+        ] {
+            let analytic = vomma(S, K, T, r, v);
+            assert!(is_close_to(analytic, expected, 1e-12));
+
+            let numeric = ng[&is_call].vomma(S, K, T, r, v, None);
+            assert!(is_close_to(numeric, analytic, 1e-2));
+        }
+    }
 }
