@@ -78,7 +78,7 @@ impl NumericGreeks {
 
     #[allow(non_snake_case)]
     pub fn theta(
-        self,
+        &self,
         S: f64,
         K: f64,
         T: f64,
@@ -106,7 +106,7 @@ impl NumericGreeks {
 
     #[allow(non_snake_case)]
     pub fn vega(
-        self,
+        &self,
         S: f64,
         K: f64,
         T: f64,
@@ -208,7 +208,7 @@ impl NumericGreeks {
 
     #[allow(non_snake_case)]
     pub fn speed(
-        self,
+        &self,
         S: f64,
         K: f64,
         T: f64,
@@ -227,7 +227,7 @@ impl NumericGreeks {
 
     #[allow(non_snake_case)]
     pub fn deltap(
-        self,
+        &self,
         S: f64,
         K: f64,
         T: f64,
@@ -244,7 +244,7 @@ impl NumericGreeks {
 
     #[allow(non_snake_case)]
     pub fn gammap(
-        self,
+        &self,
         S: f64,
         K: f64,
         T: f64,
@@ -262,7 +262,7 @@ impl NumericGreeks {
 
     #[allow(non_snake_case)]
     pub fn vegap(
-        self,
+        &self,
         S: f64,
         K: f64,
         T: f64,
@@ -277,7 +277,7 @@ impl NumericGreeks {
 
     #[allow(non_snake_case)]
     pub fn vanna(
-        self,
+        &self,
         S: f64,
         K: f64,
         T: f64,
