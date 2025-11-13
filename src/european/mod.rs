@@ -2,3 +2,4 @@ pub mod black_76;
 pub mod black_scholes_73;
 pub mod black_scholes_merton;
 pub mod garman_kohlhagen;
+pub mod generalised_black_scholes;
