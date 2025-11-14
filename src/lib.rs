@@ -1,6 +1,7 @@
 mod distributions;
 mod implied_volatility;
 
+pub mod american;
 pub mod european;
 pub mod numeric_greeks;
 

@@ -3,6 +3,8 @@
         "editor.formatOnSave": true
     },
     "cSpell.words": [
+        "adesi",
+        "barone",
         "ddelta",
         "DdeltaDtime",
         "DdeltaDvol",
@@ -25,11 +27,13 @@
         "Kohlhagen",
         "libm",
         "mathcal",
+        "Raphson",
         "scholes",
         "vanna",
         "varphi",
         "vegap",
         "vomma",
+        "whaley",
         "Wichura",
         "zomma"
     ]
