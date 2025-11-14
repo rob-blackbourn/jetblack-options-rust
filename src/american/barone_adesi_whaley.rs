@@ -33,7 +33,7 @@ pub fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     // Calculate the seed value Si
     let n = 2.0 * b / (v * v);
     let m = 2.0 * r / (v * v);
-    let q2u = (-(n - 1) + sqrt(sqr((n - 1.0)) + 4.0 * m)) / 2.0;
+    let q2u = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
     let su = K / (1.0 - 1.0 / q2u);
     let h2 = -(b * T + 2.0 * v * sqrt(T)) * K / (su - K);
     let mut Si = K + (su - K) * (1.0 - exp(h2));
@@ -49,9 +49,9 @@ pub fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     // Using the Newton Raphson algorithm solve for Si
     while fabs(lhs - rhs) / K > epsilon {
         Si = (K + rhs - bi * Si) / (1.0 - bi);
-        let d1 = (log(Si / K) + (b + (v * v) / 2) * T) / (v * sqrt(T));
+        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
         lhs = Si - K;
-        rhs = bs_price(True, Si, K, T, r, b, v) + (1 - exp((b - r) * T) * cdf(d1)) * Si / q2;
+        rhs = bs_price(true, Si, K, T, r, b, v) + (1.0 - exp((b - r) * T) * cdf(d1)) * Si / q2;
         bi = exp((b - r) * T) * cdf(d1) * (1.0 - 1.0 / q2)
             + (1.0 - exp((b - r) * T) * pdf(d1) / (v * sqrt(T))) / q2;
     }
@@ -72,7 +72,7 @@ pub fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
     let a2 = (Sk / q2) * (1.0 - exp((b - r) * T) * cdf(d1));
     if S < Sk {
-        bs_price(True, S, K, T, r, b, v) + a2 * pow(S / Sk, q2)
+        bs_price(true, S, K, T, r, b, v) + a2 * pow(S / Sk, q2)
     } else {
         S - K
     }
@@ -92,8 +92,8 @@ pub fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
 #[allow(non_snake_case)]
 pub fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     // Calculation of seed value, Si
-    let n = 2 * b / (v * v);
-    let m = 2 * r / (v * v);
+    let n = 2.0 * b / (v * v);
+    let m = 2.0 * r / (v * v);
     let q1u = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
     let su = K / (1.0 - 1.0 / q1u);
     let h1 = (b * T - 2.0 * v * sqrt(T)) * K / (K - su);
@@ -101,10 +101,10 @@ pub fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
 
     let k = 2.0 * r / (v * 2.0 * (1.0 - exp(-r * T)));
     let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let q1 = (-(n - 1.0) - sqrt(sqr(n - 1) + 4.0 * k)) / 2.0;
+    let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
     let mut lhs = K - Si;
     let mut rhs =
-        bs_price(False, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
+        bs_price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
     let mut bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
         - (1.0 + exp((b - r) * T) * pdf(-d1) / (v * sqrt(T))) / q1;
     let epsilon = 0.000001;
@@ -113,7 +113,7 @@ pub fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
         Si = (K - rhs + bi * Si) / (1.0 + bi);
         let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
         lhs = K - Si;
-        rhs = bs_price(False, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
+        rhs = bs_price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
         bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
             - (1.0 + exp((b - r) * T) * cdf(-d1) / (v * sqrt(T))) / q1;
     }
@@ -131,7 +131,7 @@ pub fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     let a1 = -(Sk / q1) * (1.0 - exp((b - r) * T) * cdf(-d1));
 
     if S > Sk {
-        bs_price(False, S, K, T, r, b, v) + a1 * pow(S / Sk, q1)
+        bs_price(false, S, K, T, r, b, v) + a1 * pow(S / Sk, q1)
     } else {
         K - S
     }
@@ -140,7 +140,7 @@ pub fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
 /// The Barone-Adesi and Whaley (1987) American approximation.
 ///
 /// Args:
-///     is_call (bool): True for a call, false for a put.
+///     is_call (bool): true for a call, false for a put.
 ///     S (f64): The asset price.
 ///     K (f64): The strike price.
 ///     T (f64): The time to expiry in years.
@@ -162,7 +162,7 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f
 /// Calculate the volatility of an option that is implied by the price.
 ///
 /// Args:
-///     is_call (bool): True for a call, false for a put.
+///     is_call (bool): true for a call, false for a put.
 ///     S (f64): The current asset price.
 ///     K (f64): The option strike price
 ///     T (f64): The time to expiry of the option in years.
