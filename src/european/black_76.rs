@@ -1,30 +1,31 @@
-/// Black (1976) Options on futures/forwards
-///
-///
-/// * The discounted futures price $ F $,
-/// * Strike price $ K $,
-/// * Risk-free rate $ r $,
-/// * Annual dividend yield $ q $,
-/// * Time to maturity $ \tau = T - t $
-/// * Volatility $ \sigma $.
-///
-/// Most of the formula use one or both of the following terms.
-///
-/// $$
-/// d_1 = \frac{\ln(F/K) + (\sigma^2/2)T}{\sigma\sqrt{T}}
-/// $$
-///
-/// $$
-/// d_2 = \frac{\ln(F/K) - (\sigma^2/2)T}{\sigma\sqrt{T}} = d_1 - \sigma\sqrt{T}
-/// $$
-///
-/// $$
-/// \varphi(x) &= \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
-/// $$
-///
-/// $$
-/// \Phi(x) &= \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
-/// $$
+//! # Black (1976) Options on futures/forwards
+//!
+//!
+//! * The discounted futures price $ F $,
+//! * Strike price $ K $,
+//! * Risk-free rate $ r $,
+//! * Annual dividend yield $ q $,
+//! * Time to maturity $ \tau = T - t $
+//! * Volatility $ \sigma $.
+//!
+//! Most of the formula use one or both of the following terms.
+//!
+//! $$
+//! d_1 = \frac{\ln(F/K) + (\sigma^2/2)T}{\sigma\sqrt{T}}
+//! $$
+//!
+//! $$
+//! d_2 = \frac{\ln(F/K) - (\sigma^2/2)T}{\sigma\sqrt{T}} = d_1 - \sigma\sqrt{T}
+//! $$
+//!
+//! $$
+//! \varphi(x) &= \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
+//! $$
+//!
+//! $$
+//! \Phi(x) &= \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
+//! $$
+
 use libm::{exp, log, sqrt};
 
 use crate::{implied_volatility::solve_ivol, numeric_greeks::without_carry::NumericGreeks};
@@ -50,16 +51,18 @@ fn pdf(x: f64) -> f64 {
 /// P = e^{-r \tau} [K\Phi(-d_2) -  F\Phi(-d_1)]
 /// $$
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     F (f64): The price of the future.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The option price.
+/// * is_call (bool): True for a call, false for a put.
+/// * F (f64): The price of the future.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The option price.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -74,19 +77,21 @@ pub fn price(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 
 /// Calculate the volatility of a Black 76 option that is implied by the price.
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     F (f64): The current asset price.
-///     K (f64): The option strike price
-///     T (f64): The time to maturity of the option in years.
-///     r (f64): The risk free rate.
-///     p (f64): The option price.
-///     max_iterations (int, Optional): The maximum number of iterations before
-///         a price is returned. Defaults to 20.
-///     epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The implied volatility.
+/// * is_call (bool): True for a call, false for a put.
+/// * F (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * p (f64): The option price.
+/// * max_iterations (int, Optional): The maximum number of iterations before
+///     a price is returned. Defaults to 20.
+/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
+///
+/// ### Returns
+///
+/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -108,12 +113,14 @@ pub fn ivol(
 
 /// Make a class to generate greeks numerically using finite difference methods.
 ///
-/// Args:
-///     is_call (bool): If true the options is a call;  otherwise it is a put.
+/// ### Arguments
 ///
-/// Returns:
-///     NumericGreeks: A class which can generate Greeks using finite difference
-///         methods.
+/// * is_call (bool): If true the options is a call;  otherwise it is a put.
+///
+/// ### Returns
+///
+/// * NumericGreeks: A class which can generate Greeks using finite difference
+///     methods.
 pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.
@@ -136,16 +143,18 @@ pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
 /// \frac{\partial P}{\partial S} = -e^{-r \tau} \Phi(-d_1)
 /// $$
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     F (f64): The current futures price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The delta.
+/// * is_call (bool): True for a call, false for a put.
+/// * F (f64): The current futures price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The volatility.
+///
+/// ### Returns
+///
+/// f64: The delta.
 #[allow(non_snake_case)]
 pub fn delta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
@@ -164,15 +173,17 @@ pub fn delta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// \frac{\partial^2 V}{\partial S^2} = e^{-r \tau} \frac{\varphi(d_1)}{F\sigma\sqrt{\tau}} = K e^{-r \tau} \frac{\varphi(d_2)}{F^2\sigma\sqrt{\tau}}
 /// $$
 ///
-/// Args:
-///     F (f64): The current futures price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The gamma.
+/// * F (f64): The current futures price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The volatility.
+///
+/// ### Returns
+///
+/// f64: The gamma.
 #[allow(non_snake_case)]
 pub fn gamma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
@@ -195,16 +206,18 @@ pub fn gamma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// \frac{\partial P}{\partial T} - \frac{F e^{-r \tau} \varphi(d_1) \sigma}{2 \sqrt{\tau}} + rKe^{-r \tau}\Phi(-d_2) - rFe^{-r \tau}\Phi(-d_1)
 /// $$
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     F (f64): The current futures price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The theta.
+/// * is_call (bool): True for a call, false for a put.
+/// * F (f64): The current futures price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The volatility.
+///
+/// ### Returns
+///
+/// f64: The theta.
 #[allow(non_snake_case)]
 pub fn theta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -228,15 +241,17 @@ pub fn theta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// \frac{\partial V}{\partial \sigma} = F e^{-r \tau} \varphi(d_1) \sqrt{\tau} = K e^{-r \tau} \varphi(d_2) \sqrt{\tau}
 /// $$
 ///
-/// Args:
-///     F (f64): The current futures price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The vega.
+/// * F (f64): The current futures price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The volatility.
+///
+/// ### Returns
+///
+/// f64: The vega.
 #[allow(non_snake_case)]
 pub fn vega(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -259,16 +274,18 @@ pub fn vega(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// \frac{\partial P}{\partial r} = -\tau e^{-r \tau} [K\Phi(-d_2) -  F\Phi(-d_1)]
 /// $$
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     F (f64): The price of the future.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The rho.
+/// * is_call (bool): True for a call, false for a put.
+/// * F (f64): The price of the future.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The rho.
 #[allow(non_snake_case)]
 pub fn rho(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -289,15 +306,17 @@ pub fn rho(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// \frac{\partial^2 V}{\partial F \partial \sigma} = -e^{-r \tau} \varphi(d_1) \frac{d_2}{\sigma} \, = \frac{\mathcal{V}}{F}\left[1 - \frac{d_1}{\sigma\sqrt{\tau}} \right]
 /// $$
 ///
-/// Args:
-///     F (f64): The price of the future.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The vanna.
+/// * F (f64): The price of the future.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The vanna.
 #[allow(non_snake_case)]
 pub fn vanna(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
@@ -314,15 +333,17 @@ pub fn vanna(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// \frac{\partial^2 V}{\partial \sigma^2} = F e^{-r \tau} \varphi(d_1) \sqrt{\tau} \frac{d_1 d_2}{\sigma} = \mathcal{V}  \frac{d_1 d_2}{\sigma}
 /// $$
 ///
-/// Args:
-///     F (f64): The price of the future.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The vomma
+/// * F (f64): The price of the future.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The vomma
 #[allow(non_snake_case)]
 pub fn vomma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
