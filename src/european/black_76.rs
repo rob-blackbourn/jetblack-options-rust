@@ -37,6 +37,8 @@ fn pdf(x: f64) -> f64 {
     crate::distributions::pdf(x, 0.0, 1.0)
 }
 
+/// ## price
+///
 /// Fair value of a futures/forward using Black 76.
 ///
 /// For a call:
@@ -75,6 +77,8 @@ pub fn price(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
+/// ## ivol
+///
 /// Calculate the volatility of a Black 76 option that is implied by the price.
 ///
 /// ### Arguments
@@ -111,6 +115,8 @@ pub fn ivol(
     )
 }
 
+/// ## make_numeric_greeks
+///
 /// Make a class to generate greeks numerically using finite difference methods.
 ///
 /// ### Arguments
@@ -128,6 +134,8 @@ pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
 }
 
+/// ## delta
+///
 /// The sensitivity of the option to a change in the asset price
 /// using Black 76.
 ///
@@ -165,6 +173,8 @@ pub fn delta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
+/// ## gamma
+///
 /// The second derivative to the change in asset price using Black 76.
 ///
 /// The gamma for both calls and puts.
@@ -191,6 +201,8 @@ pub fn gamma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     exp(-r * T) * pdf(d1) / (F * v * sqrt(T))
 }
 
+/// ## theta
+///
 /// The change in the value of the option with respect to time to expiry
 /// using Black 76.
 ///
@@ -232,6 +244,8 @@ pub fn theta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
+/// ## vega
+///
 /// The sensitivity of the options price or a change in the asset volatility
 /// using Black 76.
 ///
@@ -259,6 +273,8 @@ pub fn vega(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     F * exp(-r * T) * pdf(d1) * sqrt(T)
 }
 
+/// ## rho
+///
 /// The sensitivity of the option price to a change in the risk free rate
 /// using Black 76.
 ///
@@ -297,6 +313,8 @@ pub fn rho(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
+/// ## vanna
+///
 /// The sensitivity of the option value to the underlying
 /// asset price and the volatility.
 ///
@@ -325,6 +343,8 @@ pub fn vanna(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     -exp(-r * T) * pdf(d1) * d2 / v
 }
 
+/// ## vomma
+///
 /// The second order sensitivity to volatility.
 ///
 /// For both puts and calls.

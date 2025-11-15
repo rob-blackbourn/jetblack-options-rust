@@ -1,5 +1,6 @@
-// Option pricing functions implementing the Barone, Adesi and Whaley (1987)
-// American approximation.
+//! # Option pricing functions implementing the Barone, Adesi and Whaley (1987)
+//!
+//! American approximation.
 
 use libm::{exp, fabs, log, pow, sqrt};
 
@@ -17,19 +18,23 @@ fn sqr(x: f64) -> f64 {
     x * x
 }
 
+/// ## _kc
+///
 /// Newton Raphson algorithm to solve for the critical commodity price for a call.
 ///
-/// Args:
-///     K (f64): The strike.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     b (f64): The asset growth.
-///     v (f64): The volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The price.
+/// * K (f64): The strike.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The asset growth.
+/// * v (f64): The volatility.
+///
+/// ### Returns
+///
+/// f64: The price.
 #[allow(non_snake_case)]
-pub fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     // Calculate the seed value Si
     let n = 2.0 * b / (v * v);
     let m = 2.0 * r / (v * v);
@@ -60,7 +65,7 @@ pub fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
 }
 
 #[allow(non_snake_case)]
-pub fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     if b >= r {
         return bs_price(true, S, K, T, r, b, v);
     }
@@ -78,19 +83,23 @@ pub fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     }
 }
 
+/// ## _kp
+///
 /// Newton Raphson algorithm to solve for the critical commodity price for a put.
 ///
-/// Args:
-///     K (f64): The strike.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     b (f64): The asset growth.
-///     v (f64): The volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The price.
+/// * K (f64): The strike.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The asset growth.
+/// * v (f64): The volatility.
+///
+/// ### Returns
+///
+/// f64: The price.
 #[allow(non_snake_case)]
-pub fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     // Calculation of seed value, Si
     let n = 2.0 * b / (v * v);
     let m = 2.0 * r / (v * v);
@@ -122,7 +131,7 @@ pub fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
 }
 
 #[allow(non_snake_case)]
-pub fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     let Sk = _kp(K, T, r, b, v);
     let n = 2.0 * b / (v * v);
     let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
@@ -137,19 +146,23 @@ pub fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     }
 }
 
+/// ## price
+///
 /// The Barone-Adesi and Whaley (1987) American approximation.
 ///
-/// Args:
-///     is_call (bool): true for a call, false for a put.
-///     S (f64): The asset price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     b (f64): The cost of carry.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The price of the option.
+/// * is_call (bool): true for a call, false for a put.
+/// * S (f64): The asset price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The price of the option.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     if is_call {
@@ -159,22 +172,26 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f
     }
 }
 
+/// ## ivol
+///
 /// Calculate the volatility of an option that is implied by the price.
 ///
-/// Args:
-///     is_call (bool): true for a call, false for a put.
-///     S (f64): The current asset price.
-///     K (f64): The option strike price
-///     T (f64): The time to expiry of the option in years.
-///     r (f64): The risk free rate.
-///     b (f64): The cost of carry of the asset.
-///     p (f64): The option price.
-///     max_iterations (int, Optional): The maximum number of iterations before
-///         a price is returned. Defaults to 20.
-///     epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The implied volatility.
+/// * is_call (bool): true for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to expiry of the option in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry of the asset.
+/// * p (f64): The option price.
+/// * max_iterations (int, Optional): The maximum number of iterations before
+///       a price is returned. Defaults to 20.
+/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
+///
+/// ### Returns
+///
+/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -195,14 +212,18 @@ pub fn ivol(
     )
 }
 
+/// ## make_numeric_greeks
+///
 /// Make a class to generate greeks numerically using finite difference methods.
 ///
-/// Args:
-///     is_call (bool): If true the options is a call;  otherwise it is a put.
+/// ### Arguments
 ///
-/// Returns:
-///     NumericGreeks: A class which can generate Greeks using finite difference
-///         methods.
+/// * is_call (bool): If true the options is a call;  otherwise it is a put.
+///
+/// ### Returns
+///
+/// NumericGreeks: A class which can generate Greeks using finite difference
+///     methods.
 pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.

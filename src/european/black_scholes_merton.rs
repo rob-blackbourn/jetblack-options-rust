@@ -1,31 +1,31 @@
+//! Black-Scholes-Merton options pricing formulae using dividend yield.
+//!
+//! * Stock price $ S $,
+//! * Strike price $ K $,
+//! * Risk-free rate $ r $,
+//! * Annual dividend yield $ q $,
+//! * Time to maturity $ \tau = T - t $
+//! * Volatility $ \sigma $.
+//!
+//! where:
+//!
+//! $$
+//! d_1 = \frac{\ln(S/K) + \left(r - q + \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}}
+//! $$
+//!
+//! $$
+//! d_2 = \frac{\ln(S/K) + \left(r - q - \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}} = d_1 - \sigma\sqrt{\tau}
+//! $$
+//!
+//! $$
+//! \varphi(x) = \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
+//! $$
+//!
+//! $$
+//! \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
+//! $$
 use core::f64;
 
-/// Black-Scholes-Merton options pricing formulae using dividend yield.
-///
-/// * Stock price $ S $,
-/// * Strike price $ K $,
-/// * Risk-free rate $ r $,
-/// * Annual dividend yield $ q $,
-/// * Time to maturity $ \tau = T - t $
-/// * Volatility $ \sigma $.
-///
-/// where:
-///
-/// $$
-/// d_1 = \frac{\ln(S/K) + \left(r - q + \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}}
-/// $$
-///
-/// $$
-/// d_2 = \frac{\ln(S/K) + \left(r - q - \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}} = d_1 - \sigma\sqrt{\tau}
-/// $$
-///
-/// $$
-/// \varphi(x) = \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
-/// $$
-///
-/// $$
-/// \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
-/// $$
 use libm::{exp, fabs, log, sqrt};
 
 use crate::distributions::inv_cdf;
@@ -38,23 +38,27 @@ fn pdf(x: f64) -> f64 {
     crate::distributions::pdf(x, 0.0, 1.0)
 }
 
+/// ## price
+///
 /// The fair value of a European option, using Black-Scholes-Merton.
 ///
 /// Call price: $Se^{-q \tau}\Phi(d_1) - e^{-r \tau} K\Phi(d_2)$
 ///
 /// Put price: $e^{-r \tau} K\Phi(-d_2) -  Se^{-q \tau}\Phi(-d_1)$
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     S (f64): The current asset price.
-///     K (f64): The option strike price
-///     T (f64): The time to maturity of the option in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The volatility of the asset.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The price of the options.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The volatility of the asset.
+///
+/// ### Returns
+///
+/// f64: The price of the options.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -68,22 +72,26 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
+/// ## ivol
+///
 /// Calculate the volatility of an option that is implied by the price.
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     S (f64): The current asset price.
-///     K (f64): The option strike price
-///     T (f64): The time to maturity of the option in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     p (f64): The option price.
-///     max_iterations (int, Optional): The maximum number of iterations before
-///         a price is returned. Defaults to 20.
-///     epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The implied volatility.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * p (f64): The option price.
+/// * max_iterations (int, Optional): The maximum number of iterations before
+///       a price is returned. Defaults to 20.
+/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
+///
+/// ### Returns
+///
+/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -104,14 +112,18 @@ pub fn ivol(
     )
 }
 
+/// ## make_numeric_greeks
+///
 /// Make a class to generate greeks numerically using finite difference methods.
 ///
-/// Args:
-///     is_call (bool): If true the options is a call;  otherwise it is a put.
+/// ### Arguments
 ///
-/// Returns:
-///     NumericGreeks: A class which can generate Greeks using finite difference
-///         methods.
+/// * is_call (bool): If true the options is a call;  otherwise it is a put.
+///
+/// ### Returns
+///
+/// NumericGreeks: A class which can generate Greeks using finite difference
+///     methods.
 pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.
@@ -121,23 +133,27 @@ pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     })
 }
 
+/// ## delta
+///
 /// The sensitivity of the open to a change in the asset price.
 ///
 /// Call $\Delta$  $e^{-q \tau} \Phi(d_1)$
 ///
 /// Put $\Delta$ $-e^{-q \tau} \Phi(-d_1)$
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     S (f64): The current asset price.
-///     K (f64): The option strike price
-///     T (f64): The time to maturity of the option in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The volatility of the asset.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: the delta.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The volatility of the asset.
+///
+/// ### Returns
+///
+/// f64: the delta.
 #[allow(non_snake_case)]
 pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -149,22 +165,26 @@ pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
+/// ## gamma
+///
 /// The second derivative to the change in the asset price.
 ///
 /// $$
 /// \Gamma $ $ e^{-q \tau} \frac{\varphi(d_1)}{S\sigma\sqrt{\tau}} = K e^{-r \tau} \frac{\varphi(d_2)}{S^2\sigma\sqrt{\tau}}
 /// $$
 ///
-/// Args:
-///     S (f64): The current asset price.
-///     K (f64): The option strike price
-///     T (f64): The time to maturity of the option in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The volatility of the asset.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The gamma.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The volatility of the asset.
+///
+/// ### Returns
+///
+/// f64: The gamma.
 #[allow(non_snake_case)]
 pub fn gamma(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -172,6 +192,8 @@ pub fn gamma(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     exp(-q * T) * pdf(d1) / (S * v * sqrt(T))
 }
 
+/// ## theta
+///
 /// The theta or time decay of the value of the option.
 ///
 /// $$
@@ -182,17 +204,19 @@ pub fn gamma(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
 /// Put \Theta $ $ - e^{-q \tau}\frac{S \varphi(d_1) \sigma}{2 \sqrt{\tau}} + rKe^{-r \tau}\Phi(-d_2) - qSe^{-q \tau}\Phi(-d_1)
 /// $$
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     S (f64): The asset price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The theta.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The asset price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The theta.
 #[allow(non_snake_case)]
 pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -213,28 +237,34 @@ pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
+/// ## vega
+///
 /// The sensitivity of the options price or a change in the asset volatility.
 ///
 /// $$
 /// \mathcal{V} $ is $ S e^{-q \tau} \varphi(d_1) \sqrt{\tau} = K e^{-r \tau} \varphi(d_2) \sqrt{\tau}
 /// $$
 ///
-/// Args:
-///     S (f64): The current asset price.
-///     K (f64): The option strike price
-///     T (f64): The time to maturity of the option in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The volatility of the asset.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The vega
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The volatility of the asset.
+///
+/// ### Returns
+///
+/// f64: The vega
 #[allow(non_snake_case)]
 pub fn vega(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     S * exp(-q * T) * pdf(d1) * sqrt(T)
 }
 
+/// ## rho
+///
 /// The sensitivity of the option price to the risk free rate.
 ///
 /// Call $ \rho $ is $ K \tau e^{-r \tau}\Phi(d_2) $
@@ -244,17 +274,19 @@ pub fn vega(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
 /// Useful for all options except futures options which should use
 /// futures_rho.
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     S (f64): The asset price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The rho.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The asset price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The rho.
 #[allow(non_snake_case)]
 pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -266,19 +298,23 @@ pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64
     }
 }
 
+/// ## carry
+///
 /// Sensitivity to the cost of carry.
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     S (f64): The asset price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The carry.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The asset price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The carry.
 #[allow(non_snake_case)]
 pub fn carry(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -289,19 +325,23 @@ pub fn carry(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
+/// ## elasticity
+///
 /// The option elasticity.
 ///
-/// Args:
-///     is_call (bool): True for a call, false for a put.
-///     S (f64): The asset price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The elasticity.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The asset price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The elasticity.
 #[allow(non_snake_case)]
 pub fn elasticity(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     delta(is_call, S, K, T, r, q, v) * S / price(is_call, S, K, T, r, q, v)
@@ -328,6 +368,8 @@ pub fn forward_delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f
     }
 }
 
+/// ## vanna
+///
 /// The sensitivity to the spot price and volatility.
 ///
 /// $$
@@ -336,16 +378,18 @@ pub fn forward_delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f
 ///
 /// Also known as DdeltaDvol.
 ///
-/// Args:
-///     S (f64): The asset price.
-///     K (f64): The strike price.
-///     T (f64): The time to expiry in years.
-///     r (f64): The risk free rate.
-///     q (f64): The dividend yield.
-///     v (f64): The asset volatility.
+/// ### Arguments
 ///
-/// Returns:
-///     f64: The vanna.
+/// * S (f64): The asset price.
+/// * K (f64): The strike price.
+/// * T (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The asset volatility.
+///
+/// ### Returns
+///
+/// f64: The vanna.
 #[allow(non_snake_case)]
 pub fn vanna(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     // Also known as DdeltaDvol.
