@@ -223,7 +223,7 @@ pub fn ivol(
 /// ### Returns
 ///
 /// NumericGreeks: A class which can generate Greeks using finite difference
-///     methods.
+///  methods.
 pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.
@@ -231,4 +231,469 @@ pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
         price(is_call, S, K, T, r, b, v)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use libm::fabs;
+
+    use super::*;
+
+    fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
+        let diff = fabs(actual - expected);
+        diff < threshold
+    }
+
+    #[test]
+    fn it_should_calc_price() {
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                11.087510335081676,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.510639694796271,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                3.8736244925135566,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                2.938715732901822,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.7892100659783038,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                9.484654220828427,
+            ),
+        ] {
+            let b = r - q;
+            let actual = price(is_call, S, K, T, r, b, v);
+            assert!(is_close_to(actual, expected, 1e-12))
+        }
+    }
+
+    #[test]
+    fn it_should_calc_delta() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.8592614442108903,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.10482043749096559,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.541088570403403,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.42462427819012216,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.17169091749034138,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.813090973112196,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].delta(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, 1e-12));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_gamma() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.01870512376100919,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.01850032019357073,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.042923920551274364,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.04360354515231535,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.028399659561806345,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.03266594122308675,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, 1e-9));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_theta() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -2.6059936396929517,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -1.4788290399032804,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -4.067355373044116,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -2.284344775164011,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -2.48956425165973,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.11716003329799829,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].theta(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, 1e-11));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_vega() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                14.2656452419061,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                13.9833977312675,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                26.89826727142619,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                26.853425641593763,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                17.77822568607357,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                16.181880739890353,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].vega(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, 1e-11));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_rho() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                39.274542330740125,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -5.709938455815355,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                24.580558678367613,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -20.964770823997945,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                8.060271439361,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -34.82234069684775,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].rho(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, 1e-12));
+        }
+    }
 }
