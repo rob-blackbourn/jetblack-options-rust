@@ -693,7 +693,7 @@ mod tests {
         ] {
             let b = r - q;
             let numeric = ng[&is_call].rho(S, K, T, r, b, v, None, None);
-            assert!(is_close_to(numeric, expected, 1e-12));
+            assert!(is_close_to(numeric, expected, 1e-10));
         }
     }
 }

@@ -10,9 +10,6 @@ use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericG
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
 }
-fn pdf(x: f64) -> f64 {
-    crate::distributions::pdf(x, 0.0, 1.0)
-}
 
 fn sqr(x: f64) -> f64 {
     x * x
@@ -139,4 +136,241 @@ pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
         price(is_call, S, K, T, r, b, v)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use libm::fabs;
+
+    use super::*;
+
+    fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
+        let diff = fabs(actual - expected);
+        diff < threshold
+    }
+
+    #[test]
+    fn it_should_calc_price() {
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                11.070181515952816,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.5100272464024442,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                3.8695089570482253,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                2.999829098372267,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.7881686046834773,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                10.08179174018241,
+            ),
+        ] {
+            let b = r - q;
+            let actual = price(is_call, S, K, T, r, b, v);
+            assert!(is_close_to(actual, expected, 1e-12));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_delta() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.8569705161634467,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.10549822644847495,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.5404561878748382,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.4430050293766641,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.17153014578425996,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.9142855581178999,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].delta(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, 1e-11));
+        }
+    }
+
+    #[test]
+    fn it_should_calc_gamma() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true)),
+            (false, make_numeric_greeks(false)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.018450076488818468,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.018827352619155135,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.04283403384874873,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.04811970086393558,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.02837645780573439,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.04419040397607432,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, Some(0.01), None);
+            assert!(is_close_to(numeric, expected, 1e-9));
+        }
+    }
 }
