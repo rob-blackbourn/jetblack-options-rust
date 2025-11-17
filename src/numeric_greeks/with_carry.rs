@@ -1,5 +1,6 @@
-/// Class for calculating numeric greeks for options using finite difference
-/// methods for the generalised style using cost of carry.
+//! # Class for calculating numeric greeks for options using finite difference
+//!
+//! methods for the generalised style using cost of carry.
 use crate::numeric_greeks::DifferenceMethod;
 
 pub struct NumericGreeks {
@@ -14,6 +15,8 @@ impl NumericGreeks {
         }
     }
 
+    /// ## delta
+    ///
     /// Calculate the delta on an option using the finite difference.
     ///
     /// The delta is calculated according to one of the three difference methods.
@@ -36,21 +39,20 @@ impl NumericGreeks {
     /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S}
     /// $$
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike.
-    ///     T (f64): Time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The volatility.
-    ///     dS (f64, optional): The absolute amount to change the asset price by. Defaults to 0.01.
-    ///     method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// ### Arguments
     ///
-    /// Raises:
-    ///     ValueError: For an invalid method.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike.
+    /// * T (f64): Time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The volatility.
+    /// * dS (f64, optional): The absolute amount to change the asset price by. Defaults to 0.01.
+    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
     ///
-    /// Returns:
-    ///     f64: The numeric delta.
+    /// ### Returns
+    ///
+    /// f64: The numeric delta.
     #[allow(non_snake_case)]
     pub fn delta(
         &self,
@@ -79,6 +81,8 @@ impl NumericGreeks {
         }
     }
 
+    /// ## gamma
+    ///
     /// Calculate the gamma of an option using finite difference methods.
     ///
     /// The gamma is calculated according to one of the three difference methods.
@@ -102,21 +106,20 @@ impl NumericGreeks {
     /// $$
     ///
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike.
-    ///     T (f64): Time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The volatility.
-    ///     dS (f64, optional): The absolute amount to change the asset price by. Defaults to 0.01.
-    ///     method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// ### Arguments
     ///
-    /// Raises:
-    ///     ValueError: For an invalid method.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike.
+    /// * T (f64): Time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The volatility.
+    /// * dS (f64, optional): The absolute amount to change the asset price by. Defaults to 0.01.
+    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
     ///
-    /// Returns:
-    ///     f64: The numeric gamma.
+    /// ### Returns
+    ///
+    /// f64: The numeric gamma.
     #[allow(non_snake_case)]
     pub fn gamma(
         &self,
@@ -151,6 +154,8 @@ impl NumericGreeks {
         }
     }
 
+    /// ## theta
+    ///
     /// Calculate the theta on an option using the finite difference.
     ///
     /// The theta is calculated according to one of the three difference methods.
@@ -173,21 +178,20 @@ impl NumericGreeks {
     /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta T}
     /// $$
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike.
-    ///     T (f64): Time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The volatility.
-    ///     dT (f64, optional): The absolute amount to change the asset price by. Defaults to 1/365.
-    ///     method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// ### Arguments
     ///
-    /// Raises:
-    ///     ValueError: For an invalid method.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike.
+    /// * T (f64): Time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The volatility.
+    /// * dT (f64, optional): The absolute amount to change the asset price by. Defaults to 1/365.
+    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
     ///
-    /// Returns:
-    ///     f64: The numeric theta.
+    /// ### Returns
+    ///
+    /// f64: The numeric theta.
     #[allow(non_snake_case)]
     pub fn theta(
         &self,
@@ -216,6 +220,8 @@ impl NumericGreeks {
         }
     }
 
+    /// ## vega
+    ///
     /// Calculate the vega on an option using the finite difference.
     ///
     /// The vega is calculated according to one of the three difference methods.
@@ -238,21 +244,20 @@ impl NumericGreeks {
     /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{\Delta \sigma}
     /// $$
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike.
-    ///     T (f64): Time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The volatility.
-    ///     dV (f64, optional): The absolute amount to change the volatility by. Defaults to 0.001.
-    ///     method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// ### Arguments
     ///
-    /// Raises:
-    ///     ValueError: For an invalid method.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike.
+    /// * T (f64): Time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The volatility.
+    /// * dV (f64, optional): The absolute amount to change the volatility by. Defaults to 0.001.
+    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
     ///
-    /// Returns:
-    ///     f64: The numeric vega.
+    /// ### Returns
+    ///
+    /// f64: The numeric vega.
     #[allow(non_snake_case)]
     pub fn vega(
         &self,
@@ -281,7 +286,9 @@ impl NumericGreeks {
         }
     }
 
-    /// r"""Calculate the rho on an option using the finite difference.
+    /// ## rho
+    ///
+    /// Calculate the rho on an option using the finite difference.
     ///
     /// The rho is calculated according to one of the three difference methods.
     ///
@@ -303,22 +310,20 @@ impl NumericGreeks {
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{\Delta r}
     /// $$
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike.
-    ///     T (f64): Time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The volatility.
-    ///     dr (f64, optional): The absolute amount to change the rate by. Defaults to 0.001.
-    ///     method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// ### Arguments
     ///
-    /// Raises:
-    ///     ValueError: For an invalid method.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike.
+    /// * T (f64): Time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The volatility.
+    /// * dr (f64, optional): The absolute amount to change the rate by. Defaults to 0.001.
+    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
     ///
-    /// Returns:
-    ///     f64: The numeric rho.
-    /// """
+    /// ### Returns
+    ///
+    /// f64: The numeric rho.
     #[allow(non_snake_case)]
     pub fn rho(
         &self,
@@ -350,6 +355,8 @@ impl NumericGreeks {
         }
     }
 
+    /// ## carry
+    ///
     /// Calculate the carry on an option using the finite difference.
     ///
     /// The carry is calculated according to one of the three difference methods.
@@ -372,21 +379,20 @@ impl NumericGreeks {
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{\Delta b}
     /// $$
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike.
-    ///     T (f64): Time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The volatility.
-    ///     db (f64, optional): The absolute amount to change the carry rate by. Defaults to 0.001.
-    ///     method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// ### Arguments
     ///
-    /// Raises:
-    ///     ValueError: For an invalid method.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike.
+    /// * T (f64): Time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The volatility.
+    /// * db (f64, optional): The absolute amount to change the carry rate by. Defaults to 0.001.
+    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
     ///
-    /// Returns:
-    ///     f64: The numeric carry.
+    /// ### Returns
+    ///
+    /// f64: The numeric carry.
     #[allow(non_snake_case)]
     pub fn carry(
         &self,
@@ -496,21 +502,25 @@ impl NumericGreeks {
         self.vega(S, K, T, r, b, v, dv, method) * v * 10.0
     }
 
+    /// ## vanna
+    ///
     /// The second order derivative of the option price to a change in the asset
     /// price and a change in the volatility.
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike price.
-    ///     T (f64): The time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The asset volatility.
-    ///     dS (f64, optional): The change in spot price. Defaults to 0.01.
-    ///     dv (f64, optional): The change in volatility. Defaults to 0.01.
+    /// ### Arguments
     ///
-    /// Returns:
-    ///     f64: The vanna
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike price.
+    /// * T (f64): The time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The asset volatility.
+    /// * dS (f64, optional): The change in spot price. Defaults to 0.01.
+    /// * dv (f64, optional): The change in volatility. Defaults to 0.01.
+    ///
+    /// ### Returns
+    ///
+    /// f64: The vanna
     #[allow(non_snake_case)]
     pub fn vanna(
         &self,
@@ -534,23 +544,27 @@ impl NumericGreeks {
             / dv
     }
 
+    /// ## charm
+    ///
     /// Measures the instantaneous rate of change of delta over the passage of
     /// time.
     ///
     /// Also known as DdeltaDtime.
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike price.
-    ///     T (f64): The time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The asset volatility.
-    ///     dS (f64, optional): Change in asset price. Defaults to 0.01.
-    ///     dT (f64, optional): Change in time. Defaults to 1/365.
+    /// ### Arguments
     ///
-    /// Returns:
-    ///     f64: The charm.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike price.
+    /// * T (f64): The time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The asset volatility.
+    /// * dS (f64, optional): Change in asset price. Defaults to 0.01.
+    /// * dT (f64, optional): Change in time. Defaults to 1/365.
+    ///
+    /// ### Returns
+    ///
+    /// f64: The charm.
     #[allow(non_snake_case)]
     pub fn charm(
         &self,
@@ -597,6 +611,8 @@ impl NumericGreeks {
             / (2.0 * dv * (dS * dS))
     }
 
+    /// ## vomma
+    ///
     /// Calculate the vomma of an option using finite difference methods.
     ///
     /// The vomma is calculated according to one of the three difference methods.
@@ -620,21 +636,20 @@ impl NumericGreeks {
     /// $$
     ///
     ///
-    /// Args:
-    ///     S (f64): The asset price.
-    ///     K (f64): The strike.
-    ///     T (f64): Time to expiry in years.
-    ///     r (f64): The risk free rate.
-    ///     b (f64): The cost of carry.
-    ///     v (f64): The volatility.
-    ///     dv (f64, optional): The absolute amount to change the volatility price by. Defaults to 0.001.
-    ///     method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// ### Arguments
     ///
-    /// Raises:
-    ///     ValueError: For an invalid method.
+    /// * S (f64): The asset price.
+    /// * K (f64): The strike.
+    /// * T (f64): Time to expiry in years.
+    /// * r (f64): The risk free rate.
+    /// * b (f64): The cost of carry.
+    /// * v (f64): The volatility.
+    /// * dv (f64, optional): The absolute amount to change the volatility price by. Defaults to 0.001.
+    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
     ///
-    /// Returns:
-    ///     f64: The numeric vomma.
+    /// ### Returns
+    ///
+    /// f64: The numeric vomma.
     #[allow(non_snake_case)]
     pub fn vomma(
         &self,

@@ -1,6 +1,7 @@
-/// Class for calculating numeric greeks for options using finite difference
-/// methods for the style with no carry or dividend yield.
-// from typing import Callable, Literal
+//! # Class for calculating numeric greeks for options using finite difference
+//!
+//! methods for the style with no carry or dividend yield.
+
 use crate::numeric_greeks::DifferenceMethod;
 
 pub struct NumericGreeks {

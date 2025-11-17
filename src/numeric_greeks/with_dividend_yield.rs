@@ -1,5 +1,6 @@
-/// Class for calculating numeric greeks for options using finite difference
-/// methods for the dividend yield style.
+//! # Class for calculating numeric greeks for options using finite difference
+//!
+//! methods for the dividend yield style.
 use crate::numeric_greeks::DifferenceMethod;
 
 pub struct NumericGreeks {
