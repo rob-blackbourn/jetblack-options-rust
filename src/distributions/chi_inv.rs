@@ -49,8 +49,9 @@ pub fn chi_inv(p: f64, df: i32) -> f64 {
         } else {
             0
         };
-        let b = 2.0 / (9.0 * (df as f64));
-        let x = (df as f64) * pow((1.0 - b + (s as f64) * X * sqrt(b)), 3.0);
+        let df = df as f64;
+        let b = 2.0 / (9.0 * df);
+        let x = df * pow((1.0 - b + (s as f64) * X * sqrt(b)), 3.0);
         x
     }
 }
