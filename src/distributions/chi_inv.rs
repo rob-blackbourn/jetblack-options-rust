@@ -43,15 +43,15 @@ pub fn chi_inv(p: f64, df: i32) -> f64 {
         let t = sqrt(-2.0 * log(p1));
         let X = t - (a0 + a1 * t) / (1.0 + b1 * t + b2 * t * t);
         let s = if p - 0.5 < 0.0 {
-            -1
+            -1.0
         } else if p - 0.5 > 0.0 {
-            1
+            1.0
         } else {
-            0
+            0.0
         };
         let df = df as f64;
         let b = 2.0 / (9.0 * df);
-        let x = df * pow((1.0 - b + (s as f64) * X * sqrt(b)), 3.0);
+        let x = df * pow((1.0 - b + s * X * sqrt(b)), 3.0);
         x
     }
 }
