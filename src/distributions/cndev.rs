@@ -1,7 +1,7 @@
-use libm::{fabs, log};
+use libm::{exp, fabs, log};
 
-/// # cndev
-///
+use super::cnd::CND;
+
 /// Inverse cumulative normal distribution function
 #[allow(non_snake_case)]
 pub fn cndev(U: f64) -> f64 {
@@ -11,13 +11,13 @@ pub fn cndev(U: f64) -> f64 {
         41.39119773534,
         -25.44106049637,
     ];
-    const B: [f64; 4] = [
+    const b: [f64; 4] = [
         -8.4735109309,
         23.08336743743,
         -21.06224101826,
         3.13082909833,
     ];
-    const C: [f64; 9] = [
+    const c: [f64; 9] = [
         0.337475482272615,
         0.976169019091719,
         0.160797971491821,
@@ -33,15 +33,15 @@ pub fn cndev(U: f64) -> f64 {
     if fabs(x) < 0.92 {
         let r = x * x;
         let r = x * (((A[3] * r + A[2]) * r + A[1]) * r + A[0])
-            / ((((B[3] * r + B[2]) * r + B[1]) * r + B[0]) * r + 1.0);
+            / ((((b[3] * r + b[2]) * r + b[1]) * r + b[0]) * r + 1.0);
         return r;
     }
 
     let r = if x < 0.0 { U } else { 1.0 - U };
     let r = log(-log(r));
-    let r = C[0]
-        + r * (C[1]
-            + r * (C[2]
-                + r * (C[3] + r + (C[4] + r * (C[5] + r * (C[6] + r * (C[7] + r * C[8])))))));
-    if r >= 0.0 { r } else { -r }
+    let r = c[0]
+        + r * (c[1]
+            + r * (c[2]
+                + r * (c[3] + r + (c[4] + r * (c[5] + r * (c[6] + r * (c[7] + r * c[8])))))));
+    if x < 0.0 { -r } else { r }
 }
