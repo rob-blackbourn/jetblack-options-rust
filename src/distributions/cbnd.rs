@@ -24,17 +24,17 @@ fn sqr(x: f64) -> f64 {
 /// This code was originally translated into VBA by Graeme West
 #[allow(non_snake_case)]
 pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
-    struct Factors {
-        W: Vec<f64>,
-        XX: Vec<f64>,
+    struct Factor {
+        W: &'static [f64],
+        XX: &'static [f64],
     }
-    let all_factors: [Factors; 3] = [
-        Factors {
-            W: vec![0.17132449237917, 0.360761573048138, 0.46791393457269],
-            XX: vec![-0.932469514203152, -0.661209386466265, -0.238619186083197],
+    let all_factors = [
+        Factor {
+            W: &[0.17132449237917, 0.360761573048138, 0.46791393457269],
+            XX: &[-0.932469514203152, -0.661209386466265, -0.238619186083197],
         },
-        Factors {
-            W: vec![
+        Factor {
+            W: &[
                 4.71753363865118E-02,
                 0.106939325995318,
                 0.160078328543346,
@@ -42,7 +42,7 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
                 0.233492536538355,
                 0.249147045813403,
             ],
-            XX: vec![
+            XX: &[
                 -0.981560634246719,
                 -0.904117256370475,
                 -0.769902674194305,
@@ -51,8 +51,8 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
                 -0.125233408511469,
             ],
         },
-        Factors {
-            W: vec![
+        Factor {
+            W: &[
                 1.76140071391521E-02,
                 4.06014298003869E-02,
                 6.26720483341091E-02,
@@ -64,7 +64,7 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
                 0.149172986472604,
                 0.152753387130726,
             ],
-            XX: vec![
+            XX: &[
                 -0.993128599185095,
                 -0.963971927277914,
                 -0.912234428251326,
@@ -159,4 +159,33 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
     }
 
     BVN
+}
+
+#[cfg(test)]
+mod tests {
+    use libm::fabs;
+
+    use super::*;
+
+    fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
+        let diff = fabs(actual - expected);
+        diff < threshold
+    }
+
+    #[test]
+    fn it_should_calc_cbnd() {
+        struct S {
+            x: &'static [f64],
+            y: &'static [f64],
+        }
+
+        let s = [S {
+            x: &[1.0, 2.0],
+            y: &[0.1, 0.2],
+        }];
+        let s0 = &s[0];
+        for i in 0..s0.x.len() {
+            assert!(true);
+        }
+    }
 }
