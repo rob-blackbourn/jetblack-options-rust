@@ -1,9 +1,8 @@
-use libm::{exp, fabs, log};
-
-use super::cnd::CND;
+use libm::{fabs, log};
 
 /// Inverse cumulative normal distribution function
 #[allow(non_snake_case)]
+#[allow(non_upper_case_globals)]
 pub fn cndev(U: f64) -> f64 {
     const A: [f64; 4] = [
         2.50662823884,

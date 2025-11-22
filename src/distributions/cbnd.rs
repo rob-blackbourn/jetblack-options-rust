@@ -10,6 +10,7 @@ fn sqr(x: f64) -> f64 {
     x * x
 }
 
+#[allow(non_snake_case)]
 struct Factor {
     W: &'static [f64],
     XX: &'static [f64],
