@@ -380,4 +380,86 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn it_should_calc_theta() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true, 100)),
+            (false, make_numeric_greeks(false, 100)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -2.4761276405391808,
+                1e-12,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -1.4187804088877445,
+                1e-12,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -4.032411057874453,
+                1e-12,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -2.206432268736381,
+                1e-12,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -2.431468809334608,
+                1e-12,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.3457394162046157,
+                1e-12,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].theta(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, threshold));
+        }
+    }
 }
