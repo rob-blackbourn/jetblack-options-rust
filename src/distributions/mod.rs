@@ -1,3 +1,4 @@
+pub mod binomial_coefficient;
 pub mod cbnd;
 pub mod cdf;
 pub mod chi_inv;
