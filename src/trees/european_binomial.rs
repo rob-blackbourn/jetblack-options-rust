@@ -462,4 +462,188 @@ mod tests {
             assert!(is_close_to(numeric, expected, threshold));
         }
     }
+
+    #[test]
+    fn it_should_calc_vega() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true, 100)),
+            (false, make_numeric_greeks(false, 100)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                13.58914730397931,
+                1e-12,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                13.589147303972009,
+                1e-12,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                26.703128947537234,
+                1e-11,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                26.703128947531905,
+                1e-12,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                17.34480813834438,
+                1e-12,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                17.34480813833894,
+                1e-12,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].vega(S, K, T, r, b, v, None, None);
+            assert!(
+                is_close_to(numeric, expected, threshold),
+                "[{}].vega({}, {}, {}, {}, {}, {})",
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                b,
+                v
+            );
+        }
+    }
+
+    #[test]
+    fn it_should_calc_rho() {
+        let ng = HashMap::from([
+            (true, make_numeric_greeks(true, 100)),
+            (false, make_numeric_greeks(false, 100)),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+            (
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                41.58039938615765,
+                1e-12,
+            ),
+            (
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -5.981073820943538,
+                1e-12,
+            ),
+            (
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                25.084660240114463,
+                1e-12,
+            ),
+            (
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -22.47681296695525,
+                1e-12,
+            ),
+            (
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                8.165255681769345,
+                1e-11,
+            ),
+            (
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -44.15236484597873,
+                1e-11,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_call].rho(S, K, T, r, b, v, None, None);
+            assert!(
+                is_close_to(numeric, expected, threshold),
+                "[{}].rho({}, {}, {}, {}, {}, {})",
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                b,
+                v
+            );
+        }
+    }
 }
