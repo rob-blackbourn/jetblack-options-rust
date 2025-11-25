@@ -5,6 +5,7 @@ pub mod american;
 pub mod european;
 pub mod numeric_greeks;
 pub mod trees;
+pub mod variance;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
