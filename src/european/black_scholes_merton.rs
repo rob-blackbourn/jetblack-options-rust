@@ -656,14 +656,7 @@ pub fn strike_from_delta(
 }
 
 #[allow(non_snake_case)]
-pub fn in_the_money_prob_from_delta(
-    is_call: bool,
-    T: f64,
-    r: f64,
-    q: f64,
-    v: f64,
-    delta_: f64,
-) -> f64 {
+pub fn in_the_money_prob_from_delta(is_call: bool, T: f64, q: f64, v: f64, delta_: f64) -> f64 {
     if is_call {
         cdf(inv_cdf(delta_ / exp(-q * T)) - v * sqrt(T))
     } else {
@@ -697,7 +690,6 @@ pub fn rnd_from_in_the_money_prob(K: f64, T: f64, r: f64, v: f64, in_the_money_p
 pub fn delta_from_in_the_money_prob(
     is_call: bool,
     T: f64,
-    r: f64,
     q: f64,
     v: f64,
     in_the_money_prob: f64,
