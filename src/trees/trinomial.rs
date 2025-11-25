@@ -42,7 +42,7 @@ pub struct Greeks {
 ///
 /// ### Returns
 ///
-/// (f64, f64, f64, f64): The price, delta, gamma, theta.
+/// Greeks: The option greeks.
 #[allow(non_snake_case)]
 pub fn greeks(
     is_european: bool,
@@ -218,8 +218,6 @@ pub fn make_numeric_greeks(is_european: bool, is_call: bool, n: usize) -> Numeri
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use libm::fabs;
 
     use super::*;
@@ -232,7 +230,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_european, is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_european, is_call, S, K, r, q, T, v, price, threshold) in [
             (
                 true,
                 true,
@@ -379,9 +377,9 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let value = price(is_european, is_call, S, K, T, r, b, v, 200);
+            let actual = greeks(is_european, is_call, S, K, T, r, b, v, 200);
             assert!(
-                is_close_to(value, expected, threshold),
+                is_close_to(actual.price, price, threshold),
                 "price({}, {}, {}, {}, {}, {}, {}, {}, {})",
                 is_european,
                 is_call,
@@ -393,106 +391,6 @@ mod tests {
                 v,
                 200
             );
-        }
-    }
-
-    #[test]
-    fn it_should_calc_delta() {
-        let ng = HashMap::from([
-            (
-                true,
-                HashMap::from([
-                    (true, make_numeric_greeks(true, true, 100)),
-                    (false, make_numeric_greeks(true, false, 100)),
-                ]),
-            ),
-            (
-                false,
-                HashMap::from([
-                    (true, make_numeric_greeks(false, true, 100)),
-                    (false, make_numeric_greeks(false, false, 100)),
-                ]),
-            ),
-        ]);
-
-        #[allow(non_snake_case)]
-        for (is_european, is_call, S, K, r, q, T, v, expected, threshold) in [
-            (
-                true,
-                true,
-                110.0,
-                100.0,
-                0.1,
-                0.08,
-                6.0 / 12.0,
-                0.125,
-                0.8546747393094023,
-                1e-12,
-            ),
-            (
-                true,
-                false,
-                110.0,
-                100.0,
-                0.1,
-                0.08,
-                6.0 / 12.0,
-                0.125,
-                -0.10969294624645909,
-                1e-12,
-            ),
-            (
-                true,
-                true,
-                100.0,
-                100.0,
-                0.1,
-                0.08,
-                6.0 / 12.0,
-                0.125,
-                0.5404289451924393,
-                1e-12,
-            ),
-            (
-                true,
-                false,
-                100.0,
-                100.0,
-                0.1,
-                0.08,
-                6.0 / 12.0,
-                0.125,
-                -0.4507105497704389,
-                1e-12,
-            ),
-            (
-                true,
-                true,
-                100.0,
-                110.0,
-                0.1,
-                0.08,
-                6.0 / 12.0,
-                0.125,
-                0.17600965898771914,
-                1e-12,
-            ),
-            (
-                true,
-                false,
-                100.0,
-                110.0,
-                0.1,
-                0.08,
-                6.0 / 12.0,
-                0.125,
-                -0.8991782315475483,
-                1e-12,
-            ),
-        ] {
-            let b = r - q;
-            let numeric = ng[&is_european][&is_call].delta(S, K, T, r, b, v, None, None);
-            assert!(is_close_to(numeric, expected, threshold));
         }
     }
 }

@@ -7,6 +7,13 @@ use libm::{exp, fmax, pow, sqrt};
 
 use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericGreeks};
 
+pub struct Greeks {
+    pub price: f64,
+    pub delta: f64,
+    pub gamma: f64,
+    pub theta: f64,
+}
+
 /// ## greeks
 ///
 /// A Cox-Ross-Rubinstein binomial tree option pricer returning the price and some greeks.
@@ -25,7 +32,7 @@ use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericG
 ///
 /// ### Returns
 ///
-/// (f64, f64, f64, f64): The price, delta, gamma, theta.
+/// Greeks: The price, delta, gamma, theta.
 #[allow(non_snake_case)]
 pub fn greeks(
     is_european: bool,
@@ -37,7 +44,7 @@ pub fn greeks(
     b: f64,
     v: f64,
     n: usize,
-) -> (f64, f64, f64, f64) {
+) -> Greeks {
     let z = if is_call { 1.0 } else { -1.0 };
 
     let dT = T / (n as f64);
@@ -82,7 +89,12 @@ pub fn greeks(
 
     theta = (theta - option_value[0]) / (2.0 * dT) / 365.0;
 
-    (option_value[0], delta, gamma, theta)
+    return Greeks {
+        price: option_value[0],
+        delta,
+        gamma,
+        theta,
+    };
 }
 
 /// ## price
@@ -103,7 +115,7 @@ pub fn greeks(
 ///
 /// ### Returns
 ///
-/// f64: The price of the option.
+/// Greeks: The option greeks.
 #[allow(non_snake_case)]
 pub fn price(
     is_european: bool,
@@ -116,7 +128,7 @@ pub fn price(
     v: f64,
     n: usize,
 ) -> f64 {
-    greeks(is_european, is_call, S, K, T, r, b, v, n).0
+    greeks(is_european, is_call, S, K, T, r, b, v, n).price
 }
 
 /// ## ivol

@@ -2,13 +2,17 @@
 
 use libm::{exp, fmax, log, pow, sqrt};
 
-use crate::{
-    distributions::binomial_coefficient::comb, implied_volatility::solve_ivol,
-    numeric_greeks::with_carry::NumericGreeks,
-};
+use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericGreeks};
 
 fn sqr(x: f64) -> f64 {
     x * x
+}
+
+pub struct Greeks {
+    pub price: f64,
+    pub delta: f64,
+    pub gamma: f64,
+    pub theta: f64,
 }
 
 /// ## greeks
@@ -29,7 +33,7 @@ fn sqr(x: f64) -> f64 {
 ///
 /// ### Returns
 ///
-/// (f64, f64, f64, f64): The price, delta, gamma, theta.
+/// Greeks: The option greeks.
 #[allow(non_snake_case)]
 pub fn greeks(
     is_european: bool,
@@ -41,7 +45,7 @@ pub fn greeks(
     b: f64,
     v: f64,
     n: usize,
-) -> (f64, f64, f64, f64) {
+) -> Greeks {
     let n = if n % 2 == 0 { n + 1 } else { n };
     let z = if is_call { 1.0 } else { -1.0 };
 
@@ -106,7 +110,12 @@ pub fn greeks(
 
     theta = (theta - option_value[0]) / (2.0 * dT) / 365.0;
 
-    (option_value[0], delta, gamma, theta)
+    return Greeks {
+        price: option_value[0],
+        delta,
+        gamma,
+        theta,
+    };
 }
 
 /// ## price
@@ -140,7 +149,7 @@ pub fn price(
     v: f64,
     n: usize,
 ) -> f64 {
-    greeks(is_european, is_call, S, K, T, r, b, v, n).0
+    greeks(is_european, is_call, S, K, T, r, b, v, n).price
 }
 
 /// ## ivol
@@ -212,8 +221,6 @@ pub fn make_numeric_greeks(is_european: bool, is_call: bool, n: usize) -> Numeri
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use libm::fabs;
 
     use super::*;
