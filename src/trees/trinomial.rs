@@ -1,12 +1,9 @@
 //! # Option valuations using a trinomial tree.
 
-use libm::{exp, fmax, log, pow, sqrt};
+use libm::{exp, fmax, sqrt};
 use std::cmp::max;
 
-use crate::{
-    distributions::binomial_coefficient::comb, implied_volatility::solve_ivol,
-    numeric_greeks::with_carry::NumericGreeks,
-};
+use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericGreeks};
 
 fn sqr(x: f64) -> f64 {
     x * x
@@ -18,6 +15,13 @@ fn ipow(x: f64, p: i32) -> f64 {
         sum *= x;
     }
     sum
+}
+
+pub struct Greeks {
+    pub price: f64,
+    pub delta: f64,
+    pub gamma: f64,
+    pub theta: f64,
 }
 
 /// ## greeks
@@ -50,7 +54,7 @@ pub fn greeks(
     b: f64,
     v: f64,
     n: usize,
-) -> (f64, f64, f64, f64) {
+) -> Greeks {
     let z = if is_call { 1.0 } else { -1.0 };
 
     let dT = T / n as f64;
@@ -67,7 +71,7 @@ pub fn greeks(
     for i in 0..option_value.len() {
         let I = i as i32;
         let N = n as i32;
-        let ucount = option_value[i] = fmax(
+        option_value[i] = fmax(
             0.0,
             z * (S * ipow(u, max(I - N, 0)) * ipow(d, max(N - I, 0)) - K),
         );
@@ -103,7 +107,12 @@ pub fn greeks(
 
     theta = (theta - option_value[0]) / dT / 365.0;
 
-    (option_value[0], delta, gamma, theta)
+    return Greeks {
+        price: option_value[0],
+        delta,
+        gamma,
+        theta,
+    };
 }
 
 /// ## price
@@ -137,7 +146,7 @@ pub fn price(
     v: f64,
     n: usize,
 ) -> f64 {
-    greeks(is_european, is_call, S, K, T, r, b, v, n).0
+    greeks(is_european, is_call, S, K, T, r, b, v, n).price
 }
 
 /// ## ivol
@@ -384,6 +393,106 @@ mod tests {
                 v,
                 200
             );
+        }
+    }
+
+    #[test]
+    fn it_should_calc_delta() {
+        let ng = HashMap::from([
+            (
+                true,
+                HashMap::from([
+                    (true, make_numeric_greeks(true, true, 100)),
+                    (false, make_numeric_greeks(true, false, 100)),
+                ]),
+            ),
+            (
+                false,
+                HashMap::from([
+                    (true, make_numeric_greeks(false, true, 100)),
+                    (false, make_numeric_greeks(false, false, 100)),
+                ]),
+            ),
+        ]);
+
+        #[allow(non_snake_case)]
+        for (is_european, is_call, S, K, r, q, T, v, expected, threshold) in [
+            (
+                true,
+                true,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.8546747393094023,
+                1e-12,
+            ),
+            (
+                true,
+                false,
+                110.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.10969294624645909,
+                1e-12,
+            ),
+            (
+                true,
+                true,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.5404289451924393,
+                1e-12,
+            ),
+            (
+                true,
+                false,
+                100.0,
+                100.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.4507105497704389,
+                1e-12,
+            ),
+            (
+                true,
+                true,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                0.17600965898771914,
+                1e-12,
+            ),
+            (
+                true,
+                false,
+                100.0,
+                110.0,
+                0.1,
+                0.08,
+                6.0 / 12.0,
+                0.125,
+                -0.8991782315475483,
+                1e-12,
+            ),
+        ] {
+            let b = r - q;
+            let numeric = ng[&is_european][&is_call].delta(S, K, T, r, b, v, None, None);
+            assert!(is_close_to(numeric, expected, threshold));
         }
     }
 }
