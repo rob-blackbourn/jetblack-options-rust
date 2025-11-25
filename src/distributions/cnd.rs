@@ -1,4 +1,4 @@
-use libm::{exp, fabs, log};
+use libm::{exp, fabs};
 
 /// Cumulative double precision algorithm based on Hart 1968
 /// Based on implementation by Graeme West

@@ -8,7 +8,7 @@
 
 use libm::{exp, fmin, log, pow, sqrt};
 
-#[allow(non_snake_case)]
+#[allow(non_snake_case, dead_code)]
 pub fn chi_inv(p: f64, df: i32) -> f64 {
     let p = 1.0 - p;
     if p <= 0.5 && df <= 10 {
