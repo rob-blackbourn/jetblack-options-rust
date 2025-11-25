@@ -16,7 +16,7 @@ const EPSILON: f64 = 1e-8;
 pub fn solve_ivol(
     p: f64,
     price: impl Fn(f64) -> f64,
-    max_iterations: Option<i32>,
+    max_iterations: Option<i32>, // TODO: Should be usize?
     epsilon: Option<f64>,
 ) -> f64 {
     let max_iterations = max_iterations.unwrap_or(MAX_ITERATIONS);
