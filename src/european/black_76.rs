@@ -374,9 +374,11 @@ pub fn vomma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, f64};
 
     use libm::fabs;
+
+    use crate::numeric_greeks::DifferenceMethod;
 
     use super::*;
 
@@ -520,7 +522,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected) in [
+        for (is_call, F, K, r, T, v, expected, analytic_threshold, numeric_threshold) in [
             (
                 true,
                 110.0,
@@ -528,7 +530,9 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                0.8267860441956819,
+                0.82678604419568191,
+                1e-12,
+                1e-11,
             ),
             (
                 false,
@@ -538,6 +542,8 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.12444338030503208,
+                1e-12,
+                1e-10,
             ),
             (
                 true,
@@ -547,6 +553,8 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.4923803086739813,
+                1e-12,
+                1e-10,
             ),
             (
                 false,
@@ -556,6 +564,8 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.45884911582673277,
+                1e-12,
+                1e-10,
             ),
             (
                 true,
@@ -564,7 +574,9 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                0.14319868380006504,
+                0.14319868380006498,
+                1e-12,
+                1e-10,
             ),
             (
                 false,
@@ -573,14 +585,28 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -0.808030740700649,
+                -0.80803074070064895,
+                1e-12,
+                1e-9,
             ),
         ] {
             let analytic = delta(is_call, F, K, T, r, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numerical = ng[&is_call].delta(F, K, T, r, v, None, None);
-            assert!(is_close_to(numerical, analytic, 1e-6));
+            let numerical =
+                ng[&is_call].delta(F, K, T, r, v, Some(0.0001), Some(DifferenceMethod::Central));
+            assert!(
+                is_close_to(numerical, analytic, numeric_threshold),
+                "[{}].delta({}, {}, {}, {}, {}) -> {} <diff={:e}>",
+                is_call,
+                F,
+                K,
+                T,
+                r,
+                v,
+                numerical,
+                analytic - numerical
+            );
         }
     }
 
@@ -592,7 +618,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected) in [
+        for (is_call, F, K, r, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -601,6 +627,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.020787293603316447,
+                1e-8,
             ),
             (
                 false,
@@ -610,6 +637,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.020787293603316447,
+                1e-8,
             ),
             (
                 true,
@@ -619,6 +647,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.042891991459829734,
+                1e-8,
             ),
             (
                 false,
@@ -628,6 +657,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.042891991459829734,
+                1e-8,
             ),
             (
                 true,
@@ -637,6 +667,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.025152625260012922,
+                1e-9,
             ),
             (
                 false,
@@ -646,13 +677,25 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.025152625260012922,
+                1e-9,
             ),
         ] {
             let analytic = gamma(F, K, T, r, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numerical = ng[&is_call].gamma(F, K, T, r, v, None, None);
-            assert!(is_close_to(numerical, analytic, 1e-6));
+            let numeric = ng[&is_call].gamma(F, K, T, r, v, Some(0.01), None);
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].gamma({}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_call,
+                F,
+                K,
+                T,
+                r,
+                v,
+                numeric,
+                analytic - numeric
+            );
         }
     }
 
@@ -664,7 +707,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected) in [
+        for (is_call, F, K, r, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -672,7 +715,8 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -0.9507097692924997,
+                -0.95070976929249973,
+                1e-8,
             ),
             (
                 false,
@@ -681,7 +725,8 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -1.9019391937932124,
+                -1.901939193793212,
+                1e-8,
             ),
             (
                 true,
@@ -691,6 +736,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -3.0156249043267125,
+                1e-8,
             ),
             (
                 false,
@@ -699,7 +745,8 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -3.015624904326714,
+                -3.0156249043267138,
+                1e-8,
             ),
             (
                 true,
@@ -709,6 +756,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.9019391937932129,
+                1e-9,
             ),
             (
                 false,
@@ -717,14 +765,34 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -0.9507097692924997,
+                -0.95070976929249973,
+                1e-9,
             ),
         ] {
             let analytic = theta(is_call, F, K, T, r, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numerical = ng[&is_call].theta(F, K, T, r, v, None, None);
-            assert!(is_close_to(numerical, analytic, 1e-4));
+            let numerical = ng[&is_call].theta(
+                F,
+                K,
+                T,
+                r,
+                v,
+                Some(1.0 / 365.0 / 24.0 / 60.0),
+                Some(DifferenceMethod::Central),
+            );
+            assert!(
+                is_close_to(numerical, analytic, threshold),
+                "[{}].theta({}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_call,
+                F,
+                K,
+                T,
+                r,
+                v,
+                numerical,
+                analytic - numerical
+            );
         }
     }
 

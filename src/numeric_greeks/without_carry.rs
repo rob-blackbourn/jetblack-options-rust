@@ -16,6 +16,19 @@ impl NumericGreeks {
         }
     }
 
+    /// ## delta
+    ///
+    /// Numeric calculation of delta.
+    ///
+    /// ### Arguments
+    ///
+    /// * S (f64): The asset price.
+    /// * K (f64): the strike price.
+    /// * T (f64): The time to expiry in years.
+    /// * r (f64): the risk free rate.
+    /// * v (f64): The volatility.
+    /// * dS (Option<f64>): The asset price bump. Defaults to 0.01.
+    /// * method (Option<DifferenceMethod>): The difference method. Defaults to Central.
     #[allow(non_snake_case)]
     pub fn delta(
         &self,
@@ -25,7 +38,7 @@ impl NumericGreeks {
         r: f64,
         v: f64,
         dS: Option<f64>,
-        method: Option<DifferenceMethod>, // = 'central'
+        method: Option<DifferenceMethod>,
     ) -> f64 {
         let dS = dS.unwrap_or(0.01);
         let method = method.unwrap_or(DifferenceMethod::Central);
