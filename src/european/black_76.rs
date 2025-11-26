@@ -406,7 +406,7 @@ mod tests {
                 6.0 / 12.0,
                 0.1,
                 0.125,
-                0.6310965464529535,
+                0.63109654645295865,
             ),
             (
                 true,
@@ -433,7 +433,7 @@ mod tests {
                 6.0 / 12.0,
                 0.1,
                 0.125,
-                0.6310965464529654,
+                0.63109654645296376,
             ),
             (
                 false,
@@ -442,11 +442,11 @@ mod tests {
                 6.0 / 12.0,
                 0.1,
                 0.125,
-                10.143390791460092,
+                10.143390791460105,
             ),
         ] {
             let actual = price(is_call, F, K, T, r, v);
-            assert!(is_close_to(actual, expected, 1e-12));
+            assert!(is_close_to(actual, expected, f64::EPSILON));
         }
     }
 
