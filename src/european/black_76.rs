@@ -901,7 +901,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected) in [
+        for (is_call, F, K, r, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -909,7 +909,8 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -5.071695395730046,
+                -5.0716953957300461,
+                1e-10,
             ),
             (
                 false,
@@ -918,7 +919,8 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -0.31554827322647677,
+                -0.31554827322647933,
+                1e-11,
             ),
             (
                 true,
@@ -928,6 +930,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.6765596423624303,
+                1e-10,
             ),
             (
                 false,
@@ -936,7 +939,8 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -1.676559642362427,
+                -1.6765596423624267,
+                1e-11,
             ),
             (
                 true,
@@ -945,7 +949,8 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -0.3155482732264827,
+                -0.31554827322648188,
+                1e-11,
             ),
             (
                 false,
@@ -954,14 +959,34 @@ mod tests {
                 0.1,
                 6.0 / 12.0,
                 0.125,
-                -5.071695395730046,
+                -5.0716953957300523,
+                1e-10,
             ),
         ] {
             let analytic = rho(is_call, F, K, T, r, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numerical = ng[&is_call].rho(F, K, T, r, v, None, None);
-            assert!(is_close_to(numerical, analytic, 1e-6));
+            let numerical = ng[&is_call].rho(
+                F,
+                K,
+                T,
+                r,
+                v,
+                Some(0.00001),
+                Some(DifferenceMethod::Central),
+            );
+            assert!(
+                is_close_to(numerical, analytic, threshold),
+                "[{}].rho({}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_call,
+                F,
+                K,
+                T,
+                r,
+                v,
+                numerical,
+                analytic - numerical
+            );
         }
     }
 
