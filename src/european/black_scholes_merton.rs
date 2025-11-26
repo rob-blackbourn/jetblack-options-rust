@@ -948,8 +948,18 @@ mod tests {
                 0.125,
             ),
         ] {
-            let actual = ivol(is_call, S, K, T, r, q, p, None, None);
-            assert!(is_close_to(actual, expected, 1e-9));
+            let actual = ivol(
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                q,
+                p,
+                Some(100),
+                Some(f64::EPSILON / 2.0),
+            );
+            assert!(is_close_to(actual, expected, 1e-12));
         }
     }
 
