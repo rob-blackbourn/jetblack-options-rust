@@ -1183,7 +1183,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1193,6 +1193,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -2.5148051444486299,
+                1e-8,
             ),
             (
                 false,
@@ -1203,6 +1204,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.4574579639819345,
+                1e-8,
             ),
             (
                 true,
@@ -1213,6 +1215,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -4.0402024708588584,
+                1e-8,
             ),
             (
                 false,
@@ -1223,6 +1226,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -2.2142237390703023,
+                1e-8,
             ),
             (
                 true,
@@ -1233,6 +1237,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -2.4811528460769701,
+                1e-8,
             ),
             (
                 false,
@@ -1243,13 +1248,35 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.29605531021229758,
+                1e-8,
             ),
         ] {
             let analytic = theta(is_call, S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].theta(S, K, T, r, q, v, None, None);
-            assert!(is_close_to(numeric, analytic, 1e-4));
+            let numeric = ng[&is_call].theta(
+                S,
+                K,
+                T,
+                r,
+                q,
+                v,
+                Some(1.0 / 365.0 / 24.0 / 60.0),
+                Some(DifferenceMethod::Central),
+            );
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].theta({}, {}, {}, {}, {}, {}) --> {} (diff={:e})",
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                q,
+                v,
+                numeric,
+                analytic - numeric
+            );
         }
     }
 
@@ -1261,7 +1288,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1271,6 +1298,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 13.895452325799033,
+                1e-9,
             ),
             (
                 false,
@@ -1281,6 +1309,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 13.895452325799033,
+                1e-8,
             ),
             (
                 true,
@@ -1290,7 +1319,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                26.76999042895533,
+                26.769990428955332,
+                1e-9,
             ),
             (
                 false,
@@ -1300,7 +1330,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                26.76999042895533,
+                26.769990428955332,
+                1e-8,
             ),
             (
                 true,
@@ -1311,6 +1342,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 17.73527645306925,
+                1e-8,
             ),
             (
                 false,
@@ -1321,13 +1353,35 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 17.73527645306925,
+                1e-8,
             ),
         ] {
             let analytic = vega(S, K, T, r, q, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].vega(S, K, T, r, q, v, None, None);
-            assert!(is_close_to(numeric, analytic, 1e-3));
+            let numeric: f64 = ng[&is_call].vega(
+                S,
+                K,
+                T,
+                r,
+                q,
+                v,
+                Some(0.000001),
+                Some(DifferenceMethod::Central),
+            );
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                q,
+                v,
+                numeric,
+                analytic - numeric
+            );
         }
     }
 
