@@ -783,6 +783,8 @@ mod tests {
 
     use libm::fabs;
 
+    use crate::numeric_greeks::DifferenceMethod;
+
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
@@ -812,7 +814,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.505650275001452,
+                0.50565027500145199,
             ),
             (
                 true,
@@ -832,7 +834,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                2.913498834791845,
+                2.913498834791838,
             ),
             (
                 true,
@@ -842,7 +844,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.7881685580252977,
+                0.78816855802530128,
             ),
             (
                 false,
@@ -857,7 +859,7 @@ mod tests {
         ] {
             let b = r - q;
             let actual = price(is_call, S, K, T, r, b, v);
-            assert!(is_close_to(actual, expected, 1e-12));
+            assert!(is_close_to(actual, expected, f64::EPSILON));
         }
     }
 
@@ -927,8 +929,18 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let actual = ivol(is_call, S, K, T, r, b, p, None, None);
-            assert!(is_close_to(actual, expected, 1e-9));
+            let actual = ivol(
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                b,
+                p,
+                Some(100),
+                Some(f64::EPSILON / 2.0),
+            );
+            assert!(is_close_to(actual, expected, 1e-12));
         }
     }
 
@@ -940,7 +952,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -950,6 +962,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.8567400985874144,
+                1e-10,
             ),
             (
                 false,
@@ -960,6 +973,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.10404934056490878,
+                1e-11,
             ),
             (
                 true,
@@ -969,7 +983,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.5404518486173583,
+                0.54045184861735829,
+                1e-10,
             ),
             (
                 false,
@@ -980,6 +995,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.42033759053496483,
+                1e-10,
             ),
             (
                 true,
@@ -989,7 +1005,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.17153007262292186,
+                0.17153007262292191,
+                1e-10,
             ),
             (
                 false,
@@ -999,15 +1016,37 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.7892593665294013,
+                -0.78925936652940132,
+                1e-10,
             ),
         ] {
             let b = r - q;
             let analytic = delta(is_call, S, K, T, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].delta(S, K, T, r, b, v, None, None);
-            assert!(is_close_to(numeric, analytic, 1e-5));
+            let numeric = ng[&is_call].delta(
+                S,
+                K,
+                T,
+                r,
+                b,
+                v,
+                Some(1e-4),
+                Some(DifferenceMethod::Central),
+            );
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                b,
+                v,
+                numeric,
+                analytic - numeric
+            );
         }
     }
 
