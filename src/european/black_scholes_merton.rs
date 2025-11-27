@@ -1192,7 +1192,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.514805144448628,
+                -2.5148051444486299,
             ),
             (
                 false,
@@ -1202,7 +1202,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -1.457457963981934,
+                -1.4574579639819345,
             ),
             (
                 true,
@@ -1212,7 +1212,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -4.040202470858858,
+                -4.0402024708588584,
             ),
             (
                 false,
@@ -1232,7 +1232,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.48115284607697,
+                -2.4811528460769701,
             ),
             (
                 false,
@@ -1242,11 +1242,11 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.2960553102122976,
+                0.29605531021229758,
             ),
         ] {
             let analytic = theta(is_call, S, K, T, r, q, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].theta(S, K, T, r, q, v, None, None);
             assert!(is_close_to(numeric, analytic, 1e-4));
