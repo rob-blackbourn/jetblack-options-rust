@@ -1058,7 +1058,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1068,6 +1068,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.018374151835767315,
+                1e-8,
             ),
             (
                 false,
@@ -1078,6 +1079,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.018374151835767315,
+                1e-8,
             ),
             (
                 true,
@@ -1088,6 +1090,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.042831984686328525,
+                1e-8,
             ),
             (
                 false,
@@ -1098,6 +1101,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.042831984686328525,
+                1e-8,
             ),
             (
                 true,
@@ -1107,7 +1111,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.028376442324910798,
+                0.028376442324910805,
+                1e-8,
             ),
             (
                 false,
@@ -1117,15 +1122,37 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.028376442324910798,
+                0.028376442324910805,
+                1e-8,
             ),
         ] {
             let b = r - q;
             let analytic = gamma(S, K, T, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, None, None);
-            assert!(is_close_to(numeric, analytic, 1e-5));
+            let numeric = ng[&is_call].gamma(
+                S,
+                K,
+                T,
+                r,
+                b,
+                v,
+                Some(1e-2),
+                Some(DifferenceMethod::Central),
+            );
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                b,
+                v,
+                numeric,
+                analytic - numeric
+            );
         }
     }
 
