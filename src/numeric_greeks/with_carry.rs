@@ -21,22 +21,22 @@ impl NumericGreeks {
     ///
     /// The delta is calculated according to one of the three difference methods.
     ///
-    /// Central difference method.
+    /// #### Backward difference method.
+    ///
+    /// $$
+    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S}
+    /// $$
+    ///
+    /// #### Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S + \Delta S, K, T, r, b, \sigma) - BS_{price}(S-\Delta S, K, T, r, b, \sigma)}{2 \Delta S}
     /// $$
     ///
-    /// Forward difference method.
+    /// #### Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S+\Delta S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta S}
-    /// $$
-    ///
-    /// Backward difference method.
-    ///
-    /// $$
-    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S}
     /// $$
     ///
     /// ### Arguments
@@ -68,15 +68,15 @@ impl NumericGreeks {
         let dS = dS.unwrap_or(0.01);
         let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
+            DifferenceMethod::Backward => {
+                return ((self.price)(S, K, T, r, b, v) - (self.price)(S - dS, K, T, r, b, v)) / dS;
+            }
             DifferenceMethod::Central => {
                 return ((self.price)(S + dS, K, T, r, b, v) - (self.price)(S - dS, K, T, r, b, v))
                     / (2.0 * dS);
             }
             DifferenceMethod::Forward => {
                 return ((self.price)(S + dS, K, T, r, b, v) - (self.price)(S, K, T, r, b, v)) / dS;
-            }
-            DifferenceMethod::Backward => {
-                return ((self.price)(S, K, T, r, b, v) - (self.price)(S - dS, K, T, r, b, v)) / dS;
             }
         }
     }
@@ -87,24 +87,23 @@ impl NumericGreeks {
     ///
     /// The gamma is calculated according to one of the three difference methods.
     ///
-    /// Central difference method.
-    ///
-    /// $$
-    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S, K, T, r, b, \sigma) + BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S^2}
-    /// $$
-    ///
-    /// Forward difference method.
-    ///
-    /// $$
-    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + 2 \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S + \Delta S, K, T, r, b, \sigma) + BS_{price}(S, K, T, r, b, \sigma)}{\Delta S^2}
-    /// $$
-    ///
-    /// Backward difference method.
+    /// #### Backward difference method.
     ///
     /// $$
     /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S, K, T, r, b, \sigma) - 2 BS_{price}(S - \Delta S, K, T, r, b, \sigma) + BS_{price}(S - 2 \Delta S, K, T, r, b, \sigma)}{\Delta S^2}
     /// $$
     ///
+    /// #### Central difference method.
+    ///
+    /// $$
+    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S, K, T, r, b, \sigma) + BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S^2}
+    /// $$
+    ///
+    /// #### Forward difference method.
+    ///
+    /// $$
+    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + 2 \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S + \Delta S, K, T, r, b, \sigma) + BS_{price}(S, K, T, r, b, \sigma)}{\Delta S^2}
+    /// $$
     ///
     /// ### Arguments
     ///
@@ -135,6 +134,11 @@ impl NumericGreeks {
         let dS = dS.unwrap_or(0.01);
         let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
+            DifferenceMethod::Backward => {
+                ((self.price)(S, K, T, r, b, v) - 2.0 * (self.price)(S - dS, K, T, r, b, v)
+                    + (self.price)(S - 2.0 * dS, K, T, r, b, v))
+                    / (dS * dS)
+            }
             DifferenceMethod::Central => {
                 ((self.price)(S + dS, K, T, r, b, v) - 2.0 * (self.price)(S, K, T, r, b, v)
                     + (self.price)(S - dS, K, T, r, b, v))
@@ -146,11 +150,6 @@ impl NumericGreeks {
                     + (self.price)(S, K, T, r, b, v))
                     / (dS * dS)
             }
-            DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, b, v) - 2.0 * (self.price)(S - dS, K, T, r, b, v)
-                    + (self.price)(S - 2.0 * dS, K, T, r, b, v))
-                    / (dS * dS)
-            }
         }
     }
 
@@ -160,22 +159,22 @@ impl NumericGreeks {
     ///
     /// The theta is calculated according to one of the three difference methods.
     ///
-    /// Central difference method.
+    /// #### Backward difference method.
+    ///
+    /// $$
+    /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta T}
+    /// $$
+    ///
+    /// #### Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T + \Delta T, r, b, \sigma)}{2 \Delta T}
     /// $$
     ///
-    /// Forward difference method.
+    /// #### Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T + \Delta T, r, b, \sigma)}{\Delta T}
-    /// $$
-    ///
-    /// Backward difference method.
-    ///
-    /// $$
-    /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta T}
     /// $$
     ///
     /// ### Arguments
@@ -207,15 +206,15 @@ impl NumericGreeks {
         let dT = dT.unwrap_or(1.0 / 365.0);
         let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
+            DifferenceMethod::Backward => {
+                ((self.price)(S, K, T - dT, r, b, v) - (self.price)(S, K, T, r, b, v)) / dT
+            }
             DifferenceMethod::Central => {
                 ((self.price)(S, K, T - dT, r, b, v) - (self.price)(S, K, T + dT, r, b, v))
                     / (2.0 * dT)
             }
             DifferenceMethod::Forward => {
                 ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T + dT, r, b, v)) / dT
-            }
-            DifferenceMethod::Backward => {
-                ((self.price)(S, K, T - dT, r, b, v) - (self.price)(S, K, T, r, b, v)) / dT
             }
         }
     }
@@ -226,22 +225,22 @@ impl NumericGreeks {
     ///
     /// The vega is calculated according to one of the three difference methods.
     ///
-    /// Central difference method.
+    /// #### Backward difference method.
+    ///
+    /// $$
+    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{\Delta \sigma}
+    /// $$
+    ///
+    /// #### Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{2 \Delta \sigma}
     /// $$
     ///
-    /// Forward difference method.
+    /// #### Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta \sigma}
-    /// $$
-    ///
-    /// Backward difference method.
-    ///
-    /// $$
-    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{\Delta \sigma}
     /// $$
     ///
     /// ### Arguments
@@ -273,15 +272,15 @@ impl NumericGreeks {
         let dv = dv.unwrap_or(0.001);
         let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
+            DifferenceMethod::Backward => {
+                ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b, v - dv)) / dv
+            }
             DifferenceMethod::Central => {
                 ((self.price)(S, K, T, r, b, v + dv) - (self.price)(S, K, T, r, b, v - dv))
                     / (2.0 * dv)
             }
             DifferenceMethod::Forward => {
                 ((self.price)(S, K, T, r, b, v + dv) - (self.price)(S, K, T, r, b, v)) / dv
-            }
-            DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b, v - dv)) / dv
             }
         }
     }
@@ -292,22 +291,22 @@ impl NumericGreeks {
     ///
     /// The rho is calculated according to one of the three difference methods.
     ///
-    /// Central difference method.
+    /// #### Backward difference method.
+    ///
+    /// $$
+    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{\Delta r}
+    /// $$
+    ///
+    /// #### Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{2 \Delta r}
     /// $$
     ///
-    /// Forward difference method.
+    /// #### Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta r}
-    /// $$
-    ///
-    /// Backward difference method.
-    ///
-    /// $$
-    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{\Delta r}
     /// $$
     ///
     /// ### Arguments
@@ -339,6 +338,10 @@ impl NumericGreeks {
         let dr = dr.unwrap_or(0.001);
         let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
+            DifferenceMethod::Backward => {
+                ((self.price)(S, K, T, r + dr, b, v) - (self.price)(S, K, T, r - dr, b - dr, v))
+                    / dr
+            }
             DifferenceMethod::Central => {
                 ((self.price)(S, K, T, r + dr, b + dr, v)
                     - (self.price)(S, K, T, r - dr, b - dr, v))
@@ -346,10 +349,6 @@ impl NumericGreeks {
             }
             DifferenceMethod::Forward => {
                 ((self.price)(S, K, T, r + dr, b + dr, v) - (self.price)(S, K, T, r - dr, b, v))
-                    / dr
-            }
-            DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r + dr, b, v) - (self.price)(S, K, T, r - dr, b - dr, v))
                     / dr
             }
         }
@@ -361,22 +360,22 @@ impl NumericGreeks {
     ///
     /// The carry is calculated according to one of the three difference methods.
     ///
-    /// Central difference method.
+    /// #### Backward difference method.
+    ///
+    /// $$
+    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{\Delta b}
+    /// $$
+    ///
+    /// #### Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, T, r, b + \Delta b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{2 \Delta b}
     /// $$
     ///
-    /// Forward difference method.
+    /// #### Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, T, r, b + \Delta b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta b}
-    /// $$
-    ///
-    /// Backward difference method.
-    ///
-    /// $$
-    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{\Delta b}
     /// $$
     ///
     /// ### Arguments
@@ -409,15 +408,15 @@ impl NumericGreeks {
         let method = method.unwrap_or(DifferenceMethod::Central);
 
         match method {
+            DifferenceMethod::Backward => {
+                ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b - db, v)) / db
+            }
             DifferenceMethod::Central => {
                 ((self.price)(S, K, T, r, b + db, v) - (self.price)(S, K, T, r, b - db, v))
                     / (2.0 * db)
             }
             DifferenceMethod::Forward => {
                 ((self.price)(S, K, T, r, b + db, v) - (self.price)(S, K, T, r, b, v)) / db
-            }
-            DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b - db, v)) / db
             }
         }
     }
