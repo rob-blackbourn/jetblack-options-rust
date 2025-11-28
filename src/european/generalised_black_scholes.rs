@@ -1270,7 +1270,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, T, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1280,6 +1280,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 13.895452325799033,
+                1e-7,
             ),
             (
                 false,
@@ -1290,6 +1291,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 13.895452325799033,
+                1e-7,
             ),
             (
                 true,
@@ -1299,7 +1301,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                26.76999042895533,
+                26.769990428955332,
+                1e-8,
             ),
             (
                 false,
@@ -1309,7 +1312,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                26.76999042895533,
+                26.769990428955332,
+                1e-9,
             ),
             (
                 true,
@@ -1319,7 +1323,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                17.7352764530692,
+                17.73527645306925,
+                1e-7,
             ),
             (
                 false,
@@ -1329,15 +1334,37 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                17.7352764530692,
+                17.73527645306925,
+                1e-7,
             ),
         ] {
             let b = r - q;
             let analytic = vega(S, K, T, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].vega(S, K, T, r, b, v, None, None);
-            assert!(is_close_to(numeric, analytic, 1e-3));
+            let numeric = ng[&is_call].vega(
+                S,
+                K,
+                T,
+                r,
+                b,
+                v,
+                Some(1e-5),
+                Some(DifferenceMethod::Central),
+            );
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_call,
+                S,
+                K,
+                T,
+                r,
+                b,
+                v,
+                numeric,
+                analytic - numeric
+            );
         }
     }
 
