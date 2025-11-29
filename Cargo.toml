@@ -2,7 +2,7 @@
 name = "jetblack-options"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.60.0"
+rust-version = "1.85.0"
 description = """
 Functions for calculating option values and sensitivities, both analytically
 and using and finite difference methods.
