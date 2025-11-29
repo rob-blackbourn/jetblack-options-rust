@@ -17,8 +17,7 @@
 use libm::{exp, log, pow, sqrt};
 
 use crate::{
-    distributions::binomial_coefficient::comb, fdm::with_carry::FdmGreeks,
-    implied_volatility::solve_ivol,
+    distributions::binomial_coefficient::comb, fdm::FdmWithCarry, implied_volatility::solve_ivol,
 };
 
 /// The fair value.
@@ -74,9 +73,9 @@ pub fn ivol(
 }
 
 /// Return a struct to calculate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_call: bool, n: u64) -> FdmGreeks {
+pub fn fdm_greeks(is_call: bool, n: u64) -> FdmWithCarry {
     #[allow(non_snake_case)]
-    FdmGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
+    FdmWithCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
         price(is_call, S, K, T, r, b, v, n)
     })
 }

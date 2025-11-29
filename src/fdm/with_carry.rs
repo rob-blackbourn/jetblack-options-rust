@@ -3,17 +3,17 @@
 use crate::fdm::DifferenceMethod;
 
 /// A struct for calculating option sensitivities using finite difference methods for pricers using cost of carry.
-pub struct FdmGreeks {
+pub struct FdmWithCarry {
     /// A function to calculate the price of an option.
     ///
     /// fn price(S: 64, K: f64, T, r: f64, b: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64>,
 }
 
-impl FdmGreeks {
+impl FdmWithCarry {
     /// Create a finite difference calculator given a pricing function.
     pub fn new(price: impl Fn(f64, f64, f64, f64, f64, f64) -> f64 + 'static) -> Self {
-        FdmGreeks {
+        FdmWithCarry {
             price: Box::new(price),
         }
     }

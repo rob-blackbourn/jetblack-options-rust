@@ -25,7 +25,7 @@
 
 use libm::{exp, log, sqrt};
 
-use crate::{fdm::without_carry::FdmGreeks, implied_volatility::solve_ivol};
+use crate::{fdm::FdmWithoutCarry, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -34,130 +34,136 @@ fn pdf(x: f64) -> f64 {
     crate::distributions::pdf(x, 0.0, 1.0)
 }
 
-/// The Black-Scholes price for a non-dividend paying stock.
-///
-/// $$
-/// C(S_t, t) = N(d_1)S_t - N(d_2)Ke^{-r(T - t)}
-/// $$
-///
-/// $$
-/// P(S_t, t) = N(-d_2) Ke^{-r(T - t)} - N(-d_1) S_t
-/// $$
-#[allow(non_snake_case)]
-pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let d2 = d1 - v * sqrt(T);
-    if is_call {
-        S * cdf(d1) - K * exp(-r * T) * cdf(d2)
-    } else {
-        K * exp(-r * T) * cdf(-d2) - S * cdf(-d1)
-    }
-}
+pub struct BlackScholes73 {}
 
-/// The volatility of a Black-Scholes 73 option that is implied by
-/// the price.
-///
-/// This is calculated numerically, using the pice function to solve
-/// for the volatility.
-#[allow(non_snake_case)]
-pub fn ivol(
-    is_call: bool,
-    S: f64,
-    K: f64,
-    T: f64,
-    r: f64,
-    p: f64,
-    max_iterations: usize,
-    epsilon: f64,
-) -> f64 {
-    return solve_ivol(
-        p,
-        |v| price(is_call, S, K, T, r, v),
-        max_iterations,
-        epsilon,
-    );
-}
-
-/// Make a struct to generate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_call: bool) -> FdmGreeks {
-    // Normalize the price function to match that required by the finite
-    // difference methods.
+impl BlackScholes73 {
+    /// The Black-Scholes price for a non-dividend paying stock.
+    ///
+    /// $$
+    /// C(S_t, t) = N(d_1)S_t - N(d_2)Ke^{-r(T - t)}
+    /// $$
+    ///
+    /// $$
+    /// P(S_t, t) = N(-d_2) Ke^{-r(T - t)} - N(-d_1) S_t
+    /// $$
     #[allow(non_snake_case)]
-    FdmGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
-}
-
-/// The sensitivity to the underlying price.
-#[allow(non_snake_case)]
-pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    if is_call { cdf(d1) } else { -cdf(-d1) }
-}
-
-/// Calculates option gamma
-#[allow(non_snake_case)]
-pub fn gamma(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    pdf(d1) / (S * v * sqrt(T))
-}
-
-/// The sensitivity to time.
-#[allow(non_snake_case)]
-pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let d2 = d1 - v * sqrt(T);
-
-    if is_call {
-        -((S * pdf(d1) * v) / (2.0 * sqrt(T))) - r * K * exp(-r * T) * cdf(d2)
-    } else {
-        -((S * pdf(d1) * v) / (2.0 * sqrt(T))) + r * K * exp(-r * T) * cdf(-d2)
+    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let d2 = d1 - v * sqrt(T);
+        if is_call {
+            S * cdf(d1) - K * exp(-r * T) * cdf(d2)
+        } else {
+            K * exp(-r * T) * cdf(-d2) - S * cdf(-d1)
+        }
     }
-}
 
-#[allow(non_snake_case)]
-pub fn vega(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    S * sqrt(T) * pdf(d1)
-}
-
-#[allow(non_snake_case)]
-pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let d2 = d1 - v * sqrt(T);
-
-    if is_call {
-        K * T * exp(-r * T) * cdf(d2)
-    } else {
-        -K * T * exp(-r * T) * cdf(-d2)
+    /// The volatility of a Black-Scholes 73 option that is implied by
+    /// the price.
+    ///
+    /// This is calculated numerically, using the pice function to solve
+    /// for the volatility.
+    #[allow(non_snake_case)]
+    pub fn ivol(
+        is_call: bool,
+        S: f64,
+        K: f64,
+        T: f64,
+        r: f64,
+        p: f64,
+        max_iterations: usize,
+        epsilon: f64,
+    ) -> f64 {
+        return solve_ivol(
+            p,
+            |v| BlackScholes73::price(is_call, S, K, T, r, v),
+            max_iterations,
+            epsilon,
+        );
     }
-}
 
-/// The ratio of change in delta to the change in volatility.
-#[allow(non_snake_case)]
-pub fn vanna(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + v * v / 2.0) * T) / (v * sqrt(T));
-    let d2 = d1 - v * sqrt(T);
-    -d2 * pdf(d1) / v
-}
-
-/// The rate at which the delta of an option or warrant changes with respect to time.
-#[allow(non_snake_case)]
-pub fn charm(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let d2 = d1 - v * sqrt(T);
-
-    if is_call {
-        -pdf(d1) * (r / (v * sqrt(T)) - d2 / (2.0 * T))
-    } else {
-        -pdf(d1) * (r / (v * sqrt(T)) - d2 / (2.0 * T))
+    /// Make a struct to generate greeks numerically using finite difference methods.
+    pub fn fdm_greeks(is_call: bool) -> FdmWithoutCarry {
+        // Normalize the price function to match that required by the finite
+        // difference methods.
+        #[allow(non_snake_case)]
+        FdmWithoutCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| {
+            BlackScholes73::price(is_call, S, K, T, r, b)
+        })
     }
-}
 
-/// The rate at which the vega of an option will react to volatility in the market.
-#[allow(non_snake_case)]
-pub fn vomma(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-    let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let d2 = d1 - v * sqrt(T);
-    vega(S, K, T, r, v) * d1 * d2 / v
+    /// The sensitivity to the underlying price.
+    #[allow(non_snake_case)]
+    pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        if is_call { cdf(d1) } else { -cdf(-d1) }
+    }
+
+    /// Calculates option gamma
+    #[allow(non_snake_case)]
+    pub fn gamma(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        pdf(d1) / (S * v * sqrt(T))
+    }
+
+    /// The sensitivity to time.
+    #[allow(non_snake_case)]
+    pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let d2 = d1 - v * sqrt(T);
+
+        if is_call {
+            -((S * pdf(d1) * v) / (2.0 * sqrt(T))) - r * K * exp(-r * T) * cdf(d2)
+        } else {
+            -((S * pdf(d1) * v) / (2.0 * sqrt(T))) + r * K * exp(-r * T) * cdf(-d2)
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn vega(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        S * sqrt(T) * pdf(d1)
+    }
+
+    #[allow(non_snake_case)]
+    pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let d2 = d1 - v * sqrt(T);
+
+        if is_call {
+            K * T * exp(-r * T) * cdf(d2)
+        } else {
+            -K * T * exp(-r * T) * cdf(-d2)
+        }
+    }
+
+    /// The ratio of change in delta to the change in volatility.
+    #[allow(non_snake_case)]
+    pub fn vanna(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + v * v / 2.0) * T) / (v * sqrt(T));
+        let d2 = d1 - v * sqrt(T);
+        -d2 * pdf(d1) / v
+    }
+
+    /// The rate at which the delta of an option or warrant changes with respect to time.
+    #[allow(non_snake_case)]
+    pub fn charm(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let d2 = d1 - v * sqrt(T);
+
+        if is_call {
+            -pdf(d1) * (r / (v * sqrt(T)) - d2 / (2.0 * T))
+        } else {
+            -pdf(d1) * (r / (v * sqrt(T)) - d2 / (2.0 * T))
+        }
+    }
+
+    /// The rate at which the vega of an option will react to volatility in the market.
+    #[allow(non_snake_case)]
+    pub fn vomma(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let d2 = d1 - v * sqrt(T);
+        BlackScholes73::vega(S, K, T, r, v) * d1 * d2 / v
+    }
 }
 
 #[cfg(test)]
@@ -235,7 +241,7 @@ mod tests {
                 6.3877394613564746,
             ),
         ] {
-            let actual = price(is_call, S, K, T, r, v);
+            let actual = BlackScholes73::price(is_call, S, K, T, r, v);
             assert!(is_close_to(actual, expected, f64::EPSILON))
         }
     }
@@ -299,14 +305,17 @@ mod tests {
                 0.125,
             ),
         ] {
-            let actual = ivol(is_call, F, K, T, r, p, 100, f64::EPSILON / 2.0);
+            let actual = BlackScholes73::ivol(is_call, F, K, T, r, p, 100, f64::EPSILON / 2.0);
             assert!(is_close_to(actual, expected, 1e-12))
         }
     }
 
     #[test]
     fn it_should_calc_delta() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected, threshold) in [
@@ -371,7 +380,7 @@ mod tests {
                 1e-10,
             ),
         ] {
-            let analytic = delta(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::delta(is_call, S, K, T, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].delta(S, K, T, r, v, 0.0001, DifferenceMethod::Central);
@@ -392,7 +401,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_gamma() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected, threshold) in [
@@ -457,7 +469,7 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = gamma(S, K, T, r, v);
+            let analytic = BlackScholes73::gamma(S, K, T, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].gamma(S, K, T, r, v, 0.01, DifferenceMethod::Central);
@@ -478,7 +490,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_theta() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected, threshold) in [
@@ -543,7 +558,7 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = theta(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::theta(is_call, S, K, T, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].theta(
@@ -572,7 +587,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_vega() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected, threshold) in [
@@ -637,7 +655,7 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = vega(S, K, T, r, v);
+            let analytic = BlackScholes73::vega(S, K, T, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].vega(S, K, T, r, v, 0.000001, DifferenceMethod::Central);
@@ -658,7 +676,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_rho() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected, threshold) in [
@@ -723,7 +744,7 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = rho(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::rho(is_call, S, K, T, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].rho(S, K, T, r, v, 0.00001, DifferenceMethod::Central);
@@ -744,7 +765,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_vanna() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected) in [
@@ -803,7 +827,7 @@ mod tests {
                 1.5924538086889684,
             ),
         ] {
-            let analytic = vanna(S, K, T, r, v);
+            let analytic = BlackScholes73::vanna(S, K, T, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric = ng[&is_call].vanna(S, K, T, r, v, 0.01, 0.001, DifferenceMethod::Central);
@@ -813,7 +837,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_charm() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected) in [
@@ -872,7 +899,7 @@ mod tests {
                 -0.6035085054564097,
             ),
         ] {
-            let analytic = charm(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::charm(is_call, S, K, T, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric =
@@ -883,7 +910,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_vomma() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BlackScholes73::fdm_greeks(true)),
+            (false, BlackScholes73::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, T, v, expected) in [
@@ -942,7 +972,7 @@ mod tests {
                 52.74707656927028,
             ),
         ] {
-            let analytic = vomma(S, K, T, r, v);
+            let analytic = BlackScholes73::vomma(S, K, T, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric = ng[&is_call].vomma(S, K, T, r, v, 0.001, DifferenceMethod::Central);

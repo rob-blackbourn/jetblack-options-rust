@@ -14,8 +14,8 @@
 
 use libm::{exp, fabs, log, pow, sqrt};
 
-use crate::european::generalized_black_scholes::price as bs_price;
-use crate::{implied_volatility::solve_ivol, fdm::with_carry::FdmGreeks};
+use crate::european::GeneralizedBlackScholes as BS;
+use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -28,143 +28,149 @@ fn sqr(x: f64) -> f64 {
     x * x
 }
 
-/// Newton Raphson algorithm to solve for the critical commodity price for a call.
-#[allow(non_snake_case)]
-fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-    // Calculate the seed value Si
-    let n = 2.0 * b / (v * v);
-    let m = 2.0 * r / (v * v);
-    let q2u = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
-    let su = K / (1.0 - 1.0 / q2u);
-    let h2 = -(b * T + 2.0 * v * sqrt(T)) * K / (su - K);
-    let mut Si = K + (su - K) * (1.0 - exp(h2));
+pub struct BaroneAdesiWhaley {}
 
-    let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
-    let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-    let mut lhs = Si - K;
-    let mut rhs = bs_price(true, Si, K, T, r, b, v) + (1.0 - exp((b - r) * T) * cdf(d1)) * Si / q2;
-    let mut bi = exp((b - r) * T) * cdf(d1) * (1.0 - 1.0 / q2)
-        + (1.0 - exp((b - r) * T) * cdf(d1) / (v * sqrt(T))) / q2;
-    let epsilon = 0.000001;
-    // Using the Newton Raphson algorithm solve for Si
-    while fabs(lhs - rhs) / K > epsilon {
-        Si = (K + rhs - bi * Si) / (1.0 - bi);
-        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        lhs = Si - K;
-        rhs = bs_price(true, Si, K, T, r, b, v) + (1.0 - exp((b - r) * T) * cdf(d1)) * Si / q2;
-        bi = exp((b - r) * T) * cdf(d1) * (1.0 - 1.0 / q2)
-            + (1.0 - exp((b - r) * T) * pdf(d1) / (v * sqrt(T))) / q2;
-    }
-
-    Si
-}
-
-#[allow(non_snake_case)]
-fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-    if b >= r {
-        return bs_price(true, S, K, T, r, b, v);
-    }
-
-    let Sk = _kc(K, T, r, b, v);
-    let n = 2.0 * b / (v * v);
-    let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
-    let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-    let a2 = (Sk / q2) * (1.0 - exp((b - r) * T) * cdf(d1));
-    if S < Sk {
-        bs_price(true, S, K, T, r, b, v) + a2 * pow(S / Sk, q2)
-    } else {
-        S - K
-    }
-}
-
-/// Newton Raphson algorithm to solve for the critical commodity price for a put.
-#[allow(non_snake_case)]
-fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-    // Calculation of seed value, Si
-    let n = 2.0 * b / (v * v);
-    let m = 2.0 * r / (v * v);
-    let q1u = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
-    let su = K / (1.0 - 1.0 / q1u);
-    let h1 = (b * T - 2.0 * v * sqrt(T)) * K / (K - su);
-    let mut Si = su + (K - su) * exp(h1);
-
-    let k = 2.0 * r / (v * 2.0 * (1.0 - exp(-r * T)));
-    let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-    let mut lhs = K - Si;
-    let mut rhs =
-        bs_price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
-    let mut bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
-        - (1.0 + exp((b - r) * T) * pdf(-d1) / (v * sqrt(T))) / q1;
-    let epsilon = 0.000001;
-    // Using the Newton Raphson algorithm, solve for Si.
-    while fabs(lhs - rhs) / K > epsilon {
-        Si = (K - rhs + bi * Si) / (1.0 + bi);
-        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        lhs = K - Si;
-        rhs = bs_price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
-        bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
-            - (1.0 + exp((b - r) * T) * cdf(-d1) / (v * sqrt(T))) / q1;
-    }
-
-    Si
-}
-
-#[allow(non_snake_case)]
-fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-    let Sk = _kp(K, T, r, b, v);
-    let n = 2.0 * b / (v * v);
-    let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
-    let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-    let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-    let a1 = -(Sk / q1) * (1.0 - exp((b - r) * T) * cdf(-d1));
-
-    if S > Sk {
-        bs_price(false, S, K, T, r, b, v) + a1 * pow(S / Sk, q1)
-    } else {
-        K - S
-    }
-}
-
-/// The Barone-Adesi and Whaley (1987) American approximation.
-#[allow(non_snake_case)]
-pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-    if is_call {
-        _call_price(S, K, T, r, b, v)
-    } else {
-        _put_price(S, K, T, r, b, v)
-    }
-}
-
-/// Calculate the volatility of an option that is implied by the price.
-#[allow(non_snake_case)]
-pub fn ivol(
-    is_call: bool,
-    S: f64,
-    K: f64,
-    T: f64,
-    r: f64,
-    b: f64,
-    p: f64,
-    max_iterations: usize,
-    epsilon: f64,
-) -> f64 {
-    solve_ivol(
-        p,
-        |v| price(is_call, S, K, T, r, b, v),
-        max_iterations,
-        epsilon,
-    )
-}
-
-/// Return a struct to calculate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_call: bool) -> FdmGreeks {
+impl BaroneAdesiWhaley {
+    /// Newton Raphson algorithm to solve for the critical commodity price for a call.
     #[allow(non_snake_case)]
-    FdmGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
-        price(is_call, S, K, T, r, b, v)
-    })
+    fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+        // Calculate the seed value Si
+        let n = 2.0 * b / (v * v);
+        let m = 2.0 * r / (v * v);
+        let q2u = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
+        let su = K / (1.0 - 1.0 / q2u);
+        let h2 = -(b * T + 2.0 * v * sqrt(T)) * K / (su - K);
+        let mut Si = K + (su - K) * (1.0 - exp(h2));
+
+        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
+        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
+        let mut lhs = Si - K;
+        let mut rhs =
+            BS::price(true, Si, K, T, r, b, v) + (1.0 - exp((b - r) * T) * cdf(d1)) * Si / q2;
+        let mut bi = exp((b - r) * T) * cdf(d1) * (1.0 - 1.0 / q2)
+            + (1.0 - exp((b - r) * T) * cdf(d1) / (v * sqrt(T))) / q2;
+        let epsilon = 0.000001;
+        // Using the Newton Raphson algorithm solve for Si
+        while fabs(lhs - rhs) / K > epsilon {
+            Si = (K + rhs - bi * Si) / (1.0 - bi);
+            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+            lhs = Si - K;
+            rhs = BS::price(true, Si, K, T, r, b, v) + (1.0 - exp((b - r) * T) * cdf(d1)) * Si / q2;
+            bi = exp((b - r) * T) * cdf(d1) * (1.0 - 1.0 / q2)
+                + (1.0 - exp((b - r) * T) * pdf(d1) / (v * sqrt(T))) / q2;
+        }
+
+        Si
+    }
+
+    #[allow(non_snake_case)]
+    fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+        if b >= r {
+            return BS::price(true, S, K, T, r, b, v);
+        }
+
+        let Sk = BaroneAdesiWhaley::_kc(K, T, r, b, v);
+        let n = 2.0 * b / (v * v);
+        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
+        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
+        let a2 = (Sk / q2) * (1.0 - exp((b - r) * T) * cdf(d1));
+        if S < Sk {
+            BS::price(true, S, K, T, r, b, v) + a2 * pow(S / Sk, q2)
+        } else {
+            S - K
+        }
+    }
+
+    /// Newton Raphson algorithm to solve for the critical commodity price for a put.
+    #[allow(non_snake_case)]
+    fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+        // Calculation of seed value, Si
+        let n = 2.0 * b / (v * v);
+        let m = 2.0 * r / (v * v);
+        let q1u = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
+        let su = K / (1.0 - 1.0 / q1u);
+        let h1 = (b * T - 2.0 * v * sqrt(T)) * K / (K - su);
+        let mut Si = su + (K - su) * exp(h1);
+
+        let k = 2.0 * r / (v * 2.0 * (1.0 - exp(-r * T)));
+        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
+        let mut lhs = K - Si;
+        let mut rhs =
+            BS::price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
+        let mut bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
+            - (1.0 + exp((b - r) * T) * pdf(-d1) / (v * sqrt(T))) / q1;
+        let epsilon = 0.000001;
+        // Using the Newton Raphson algorithm, solve for Si.
+        while fabs(lhs - rhs) / K > epsilon {
+            Si = (K - rhs + bi * Si) / (1.0 + bi);
+            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+            lhs = K - Si;
+            rhs =
+                BS::price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
+            bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
+                - (1.0 + exp((b - r) * T) * cdf(-d1) / (v * sqrt(T))) / q1;
+        }
+
+        Si
+    }
+
+    #[allow(non_snake_case)]
+    fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+        let Sk = BaroneAdesiWhaley::_kp(K, T, r, b, v);
+        let n = 2.0 * b / (v * v);
+        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
+        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
+        let a1 = -(Sk / q1) * (1.0 - exp((b - r) * T) * cdf(-d1));
+
+        if S > Sk {
+            BS::price(false, S, K, T, r, b, v) + a1 * pow(S / Sk, q1)
+        } else {
+            K - S
+        }
+    }
+
+    /// The Barone-Adesi and Whaley (1987) American approximation.
+    #[allow(non_snake_case)]
+    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+        if is_call {
+            BaroneAdesiWhaley::_call_price(S, K, T, r, b, v)
+        } else {
+            BaroneAdesiWhaley::_put_price(S, K, T, r, b, v)
+        }
+    }
+
+    /// Calculate the volatility of an option that is implied by the price.
+    #[allow(non_snake_case)]
+    pub fn ivol(
+        is_call: bool,
+        S: f64,
+        K: f64,
+        T: f64,
+        r: f64,
+        b: f64,
+        p: f64,
+        max_iterations: usize,
+        epsilon: f64,
+    ) -> f64 {
+        solve_ivol(
+            p,
+            |v| BaroneAdesiWhaley::price(is_call, S, K, T, r, b, v),
+            max_iterations,
+            epsilon,
+        )
+    }
+
+    /// Return a struct to calculate greeks numerically using finite difference methods.
+    pub fn fdm_greeks(is_call: bool) -> FdmWithCarry {
+        #[allow(non_snake_case)]
+        FdmWithCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
+            BaroneAdesiWhaley::price(is_call, S, K, T, r, b, v)
+        })
+    }
 }
 
 #[cfg(test)]
@@ -248,14 +254,17 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let actual = price(is_call, S, K, T, r, b, v);
+            let actual = BaroneAdesiWhaley::price(is_call, S, K, T, r, b, v);
             assert!(is_close_to(actual, expected, 1e-12))
         }
     }
 
     #[test]
     fn it_should_calc_delta() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BaroneAdesiWhaley::fdm_greeks(true)),
+            (false, BaroneAdesiWhaley::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -328,7 +337,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_gamma() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BaroneAdesiWhaley::fdm_greeks(true)),
+            (false, BaroneAdesiWhaley::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -401,7 +413,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_theta() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BaroneAdesiWhaley::fdm_greeks(true)),
+            (false, BaroneAdesiWhaley::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -475,7 +490,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_vega() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BaroneAdesiWhaley::fdm_greeks(true)),
+            (false, BaroneAdesiWhaley::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -548,7 +566,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_rho() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BaroneAdesiWhaley::fdm_greeks(true)),
+            (false, BaroneAdesiWhaley::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [

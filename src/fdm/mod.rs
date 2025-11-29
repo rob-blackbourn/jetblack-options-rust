@@ -6,6 +6,11 @@
 mod constants;
 pub use constants::DifferenceMethod;
 
-pub mod with_carry;
-pub mod with_dividend_yield;
-pub mod without_carry;
+mod with_carry;
+pub use with_carry::FdmWithCarry;
+
+mod with_dividend_yield;
+pub use with_dividend_yield::FdmWithDividendYield;
+
+mod without_carry;
+pub use without_carry::FdmWithoutCarry;

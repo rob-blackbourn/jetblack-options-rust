@@ -13,14 +13,14 @@
 use crate::fdm::DifferenceMethod;
 
 /// A struct for calculating option sensitivities using finite difference methods for pricers without carry or dividend yield.
-pub struct FdmGreeks {
+pub struct FdmWithoutCarry {
     /// fn price(S: 64, K: f64, T, r: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64) -> f64>,
 }
 
-impl FdmGreeks {
+impl FdmWithoutCarry {
     pub fn new(price: impl Fn(f64, f64, f64, f64, f64) -> f64 + 'static) -> Self {
-        FdmGreeks {
+        FdmWithoutCarry {
             price: Box::new(price),
         }
     }

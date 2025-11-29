@@ -18,8 +18,8 @@
 use libm::{exp, fmax, log, pow, sqrt};
 
 use crate::distributions::cbnd::cbnd;
-use crate::european::generalized_black_scholes::price as bs_price;
-use crate::{implied_volatility::solve_ivol, fdm::with_carry::FdmGreeks};
+use crate::european::GeneralizedBlackScholes as BS;
+use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -29,127 +29,133 @@ fn sqr(x: f64) -> f64 {
     x * x
 }
 
-#[allow(non_snake_case)]
-fn _phi(S: f64, T: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
-    let lambda_ = (-r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v)) * T;
-    let d = -(log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * T) / (v * sqrt(T));
-    let kappa = 2.0 * b / (v * v) + 2.0 * gamma_ - 1.0;
-    exp(lambda_)
-        * pow(S, gamma_)
-        * (cdf(d) - pow(i / S, kappa) * cdf(d - 2.0 * log(i / S) / (v * sqrt(T))))
-}
+pub struct BjerksundStensland2002 {}
 
-#[allow(non_snake_case)]
-fn _ksi(
-    S: f64,
-    T2: f64,
-    gamma_: f64,
-    h: f64,
-    I2: f64,
-    I1: f64,
-    t1: f64,
-    r: f64,
-    b: f64,
-    v: f64,
-) -> f64 {
-    let e1 = (log(S / I1) + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
-    let e2 = (log((I2 * I2) / (S * I1)) + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
-    let e3 = (log(S / I1) - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
-    let e4 = (log(I2 * I2 / (S * I1)) - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
-
-    let f1 = (log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
-    let f2 = (log((I2 * I2) / (S * h)) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
-    let f3 = (log((I1 * I1) / (S * h)) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
-    let f4 = (log(S * (I1 * I1) / (h * (I2 * I2))) + (b + (gamma_ - 0.5) * (v * v)) * T2)
-        / (v * sqrt(T2));
-
-    let rho = sqrt(t1 / T2);
-    let lambda_ = -r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v);
-    let kappa = 2.0 * b / (v * v) + (2.0 * gamma_ - 1.0);
-
-    exp(lambda_ * T2)
-        * pow(S, gamma_)
-        * (cbnd(-e1, -f1, rho)
-            - pow(I2 / S, kappa) * cbnd(-e2, -f2, rho)
-            - pow(I1 / S, kappa) * cbnd(-e3, -f3, -rho)
-            + pow(I1 / I2, kappa) * cbnd(-e4, -f4, -rho))
-}
-
-#[allow(non_snake_case)]
-fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-    let t1 = 1.0 / 2.0 * (sqrt(5.0) - 1.0) * T;
-
-    if b >= r {
-        // Use Black-Scholes as it is never optimal to exercise before maturity.
-        return bs_price(true, S, K, T, r, b, v);
-    }
-
-    let beta = (1.0 / 2.0 - b / (v * v)) + sqrt(sqr(b / (v * v) - 1.0 / 2.0) + 2.0 * r / (v * v));
-    let b_infinity = beta / (beta - 1.0) * K;
-    let b0 = fmax(K, r / (r - b) * K);
-
-    let ht1 = -(b * t1 + 2.0 * v * sqrt(t1)) * (K * K) / ((b_infinity - b0) * b0);
-    let ht2 = -(b * T + 2.0 * v * sqrt(T)) * (K * K) / ((b_infinity - b0) * b0);
-    let I1 = b0 + (b_infinity - b0) * (1.0 - exp(ht1));
-    let I2 = b0 + (b_infinity - b0) * (1.0 - exp(ht2));
-    let alfa1 = (I1 - K) * pow(I1, -beta);
-    let alfa2 = (I2 - K) * pow(I2, -beta);
-
-    if S >= I2 {
-        S - K
-    } else {
-        return alfa2 * pow(S, beta) - alfa2 * _phi(S, t1, beta, I2, I2, r, b, v)
-            + _phi(S, t1, 1.0, I2, I2, r, b, v)
-            - _phi(S, t1, 1.0, I1, I2, r, b, v)
-            - K * _phi(S, t1, 0.0, I2, I2, r, b, v)
-            + K * _phi(S, t1, 0.0, I1, I2, r, b, v)
-            + alfa1 * _phi(S, t1, beta, I1, I2, r, b, v)
-            - alfa1 * _ksi(S, T, beta, I1, I2, I1, t1, r, b, v)
-            + _ksi(S, T, 1.0, I1, I2, I1, t1, r, b, v)
-            - _ksi(S, T, 1.0, K, I2, I1, t1, r, b, v)
-            - K * _ksi(S, T, 0.0, I1, I2, I1, t1, r, b, v)
-            + K * _ksi(S, T, 0.0, K, I2, I1, t1, r, b, v);
-    }
-}
-
-/// The Bjerksund and Stensland (2002) American approximation.
-#[allow(non_snake_case)]
-pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-    if is_call {
-        _call_price(S, K, T, r, b, v)
-    } else {
-        // Use the Bjerksund and Stensland put-call transformation
-        _call_price(K, S, T, r - b, -b, v)
-    }
-}
-
-/// Calculate the volatility of an option that is implied by the price.
-#[allow(non_snake_case)]
-pub fn ivol(
-    is_call: bool,
-    S: f64,
-    K: f64,
-    T: f64,
-    r: f64,
-    b: f64,
-    p: f64,
-    max_iterations: usize,
-    epsilon: f64,
-) -> f64 {
-    solve_ivol(
-        p,
-        |v| price(is_call, S, K, T, r, b, v),
-        max_iterations,
-        epsilon,
-    )
-}
-
-/// Return a struct to calculate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_call: bool) -> FdmGreeks {
+impl BjerksundStensland2002 {
     #[allow(non_snake_case)]
-    FdmGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
-        price(is_call, S, K, T, r, b, v)
-    })
+    fn _phi(S: f64, T: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
+        let lambda_ = (-r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v)) * T;
+        let d = -(log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * T) / (v * sqrt(T));
+        let kappa = 2.0 * b / (v * v) + 2.0 * gamma_ - 1.0;
+        exp(lambda_)
+            * pow(S, gamma_)
+            * (cdf(d) - pow(i / S, kappa) * cdf(d - 2.0 * log(i / S) / (v * sqrt(T))))
+    }
+
+    #[allow(non_snake_case)]
+    fn _ksi(
+        S: f64,
+        T2: f64,
+        gamma_: f64,
+        h: f64,
+        I2: f64,
+        I1: f64,
+        t1: f64,
+        r: f64,
+        b: f64,
+        v: f64,
+    ) -> f64 {
+        let e1 = (log(S / I1) + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
+        let e2 = (log((I2 * I2) / (S * I1)) + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
+        let e3 = (log(S / I1) - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
+        let e4 = (log(I2 * I2 / (S * I1)) - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
+
+        let f1 = (log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
+        let f2 = (log((I2 * I2) / (S * h)) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
+        let f3 = (log((I1 * I1) / (S * h)) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
+        let f4 = (log(S * (I1 * I1) / (h * (I2 * I2))) + (b + (gamma_ - 0.5) * (v * v)) * T2)
+            / (v * sqrt(T2));
+
+        let rho = sqrt(t1 / T2);
+        let lambda_ = -r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v);
+        let kappa = 2.0 * b / (v * v) + (2.0 * gamma_ - 1.0);
+
+        exp(lambda_ * T2)
+            * pow(S, gamma_)
+            * (cbnd(-e1, -f1, rho)
+                - pow(I2 / S, kappa) * cbnd(-e2, -f2, rho)
+                - pow(I1 / S, kappa) * cbnd(-e3, -f3, -rho)
+                + pow(I1 / I2, kappa) * cbnd(-e4, -f4, -rho))
+    }
+
+    #[allow(non_snake_case)]
+    fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+        let t1 = 1.0 / 2.0 * (sqrt(5.0) - 1.0) * T;
+
+        if b >= r {
+            // Use Black-Scholes as it is never optimal to exercise before maturity.
+            return BS::price(true, S, K, T, r, b, v);
+        }
+
+        let beta =
+            (1.0 / 2.0 - b / (v * v)) + sqrt(sqr(b / (v * v) - 1.0 / 2.0) + 2.0 * r / (v * v));
+        let b_infinity = beta / (beta - 1.0) * K;
+        let b0 = fmax(K, r / (r - b) * K);
+
+        let ht1 = -(b * t1 + 2.0 * v * sqrt(t1)) * (K * K) / ((b_infinity - b0) * b0);
+        let ht2 = -(b * T + 2.0 * v * sqrt(T)) * (K * K) / ((b_infinity - b0) * b0);
+        let I1 = b0 + (b_infinity - b0) * (1.0 - exp(ht1));
+        let I2 = b0 + (b_infinity - b0) * (1.0 - exp(ht2));
+        let alfa1 = (I1 - K) * pow(I1, -beta);
+        let alfa2 = (I2 - K) * pow(I2, -beta);
+
+        if S >= I2 {
+            S - K
+        } else {
+            return alfa2 * pow(S, beta)
+                - alfa2 * BjerksundStensland2002::_phi(S, t1, beta, I2, I2, r, b, v)
+                + BjerksundStensland2002::_phi(S, t1, 1.0, I2, I2, r, b, v)
+                - BjerksundStensland2002::_phi(S, t1, 1.0, I1, I2, r, b, v)
+                - K * BjerksundStensland2002::_phi(S, t1, 0.0, I2, I2, r, b, v)
+                + K * BjerksundStensland2002::_phi(S, t1, 0.0, I1, I2, r, b, v)
+                + alfa1 * BjerksundStensland2002::_phi(S, t1, beta, I1, I2, r, b, v)
+                - alfa1 * BjerksundStensland2002::_ksi(S, T, beta, I1, I2, I1, t1, r, b, v)
+                + BjerksundStensland2002::_ksi(S, T, 1.0, I1, I2, I1, t1, r, b, v)
+                - BjerksundStensland2002::_ksi(S, T, 1.0, K, I2, I1, t1, r, b, v)
+                - K * BjerksundStensland2002::_ksi(S, T, 0.0, I1, I2, I1, t1, r, b, v)
+                + K * BjerksundStensland2002::_ksi(S, T, 0.0, K, I2, I1, t1, r, b, v);
+        }
+    }
+
+    /// The Bjerksund and Stensland (2002) American approximation.
+    #[allow(non_snake_case)]
+    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+        if is_call {
+            BjerksundStensland2002::_call_price(S, K, T, r, b, v)
+        } else {
+            // Use the Bjerksund and Stensland put-call transformation
+            BjerksundStensland2002::_call_price(K, S, T, r - b, -b, v)
+        }
+    }
+
+    /// Calculate the volatility of an option that is implied by the price.
+    #[allow(non_snake_case)]
+    pub fn ivol(
+        is_call: bool,
+        S: f64,
+        K: f64,
+        T: f64,
+        r: f64,
+        b: f64,
+        p: f64,
+        max_iterations: usize,
+        epsilon: f64,
+    ) -> f64 {
+        solve_ivol(
+            p,
+            |v| BjerksundStensland2002::price(is_call, S, K, T, r, b, v),
+            max_iterations,
+            epsilon,
+        )
+    }
+
+    /// Return a struct to calculate greeks numerically using finite difference methods.
+    pub fn fdm_greeks(is_call: bool) -> FdmWithCarry {
+        #[allow(non_snake_case)]
+        FdmWithCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
+            BjerksundStensland2002::price(is_call, S, K, T, r, b, v)
+        })
+    }
 }
 
 #[cfg(test)]
@@ -233,7 +239,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let actual = price(is_call, S, K, T, r, b, v);
+            let actual = BjerksundStensland2002::price(is_call, S, K, T, r, b, v);
 
             assert!(is_close_to(actual, expected, 1e-12));
         }
@@ -241,7 +247,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_delta() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BjerksundStensland2002::fdm_greeks(true)),
+            (false, BjerksundStensland2002::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -320,7 +329,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_gamma() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BjerksundStensland2002::fdm_greeks(true)),
+            (false, BjerksundStensland2002::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -410,7 +422,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_theta() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BjerksundStensland2002::fdm_greeks(true)),
+            (false, BjerksundStensland2002::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -500,7 +515,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_vega() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BjerksundStensland2002::fdm_greeks(true)),
+            (false, BjerksundStensland2002::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -589,7 +607,10 @@ mod tests {
 
     #[test]
     fn it_should_calc_rho() {
-        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
+        let ng = HashMap::from([
+            (true, BjerksundStensland2002::fdm_greeks(true)),
+            (false, BjerksundStensland2002::fdm_greeks(false)),
+        ]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
