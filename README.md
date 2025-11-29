@@ -36,3 +36,9 @@ This library provides two things:
 * Jarrow-Rudd
 * Leisen Reimer
 * Trinomial
+
+### Bumping (Finite Difference Methods)
+
+* With Carry
+* Without Carry
+* With Dividend Yield
