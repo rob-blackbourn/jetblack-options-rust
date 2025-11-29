@@ -24,6 +24,20 @@
 //! $$
 //! \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
 //! $$
+//!
+//! The following arguments has common meanings.
+//!
+//! * is_call (bool): True for a call, false for a put.
+//! * S (f64): The current asset price.
+//! * K (f64): The option strike price
+//! * T (f64): The time to maturity of the option in years.
+//! * r (f64): The risk free rate.
+//! * q (f64): The dividend yield.
+//! * v (f64): The volatility of the asset.
+//! * max_iterations (usize): The maximum number of iterations before a price is returned. Defaults to 20.
+//! * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
+//!
+
 use core::f64;
 
 use libm::{exp, fabs, log, sqrt};
@@ -38,27 +52,11 @@ fn pdf(x: f64) -> f64 {
     crate::distributions::pdf(x, 0.0, 1.0)
 }
 
-/// ## price
-///
 /// The fair value of a European option, using Black-Scholes-Merton.
 ///
 /// Call price: $Se^{-q \tau}\Phi(d_1) - e^{-r \tau} K\Phi(d_2)$
 ///
 /// Put price: $e^{-r \tau} K\Phi(-d_2) -  Se^{-q \tau}\Phi(-d_1)$
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The volatility of the asset.
-///
-/// ### Returns
-///
-/// f64: The price of the options.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -72,26 +70,7 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
-/// ## ivol
-///
 /// Calculate the volatility of an option that is implied by the price.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * p (f64): The option price.
-/// * max_iterations (int, Optional): The maximum number of iterations before
-///       a price is returned. Defaults to 20.
-/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
-///
-/// ### Returns
-///
-/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -101,8 +80,8 @@ pub fn ivol(
     r: f64,
     q: f64,
     p: f64,
-    max_iterations: Option<i32>, // = 20,
-    epsilon: Option<f64>,        // =1e-8
+    max_iterations: usize, // = 20,
+    epsilon: f64,          // =1e-8
 ) -> f64 {
     solve_ivol(
         p,
@@ -112,19 +91,8 @@ pub fn ivol(
     )
 }
 
-/// ## make_numeric_greeks
-///
-/// Make a class to generate greeks numerically using finite difference methods.
-///
-/// ### Arguments
-///
-/// * is_call (bool): If true the options is a call;  otherwise it is a put.
-///
-/// ### Returns
-///
-/// NumericGreeks: A class which can generate Greeks using finite difference
-///     methods.
-pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
+/// Return a struct to calculate greeks numerically using finite difference methods.
+pub fn fdm_greeks(is_call: bool) -> NumericGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.
     #[allow(non_snake_case)]
@@ -133,27 +101,11 @@ pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
     })
 }
 
-/// ## delta
-///
-/// The sensitivity of the open to a change in the asset price.
+/// The sensitivity of the option to a change in the asset price.
 ///
 /// Call $\Delta$  $e^{-q \tau} \Phi(d_1)$
 ///
 /// Put $\Delta$ $-e^{-q \tau} \Phi(-d_1)$
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The volatility of the asset.
-///
-/// ### Returns
-///
-/// f64: the delta.
 #[allow(non_snake_case)]
 pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -165,26 +117,11 @@ pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
-/// ## gamma
-///
 /// The second derivative to the change in the asset price.
 ///
 /// $$
 /// \Gamma $ $ e^{-q \tau} \frac{\varphi(d_1)}{S\sigma\sqrt{\tau}} = K e^{-r \tau} \frac{\varphi(d_2)}{S^2\sigma\sqrt{\tau}}
 /// $$
-///
-/// ### Arguments
-///
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The volatility of the asset.
-///
-/// ### Returns
-///
-/// f64: The gamma.
 #[allow(non_snake_case)]
 pub fn gamma(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -192,8 +129,6 @@ pub fn gamma(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     exp(-q * T) * pdf(d1) / (S * v * sqrt(T))
 }
 
-/// ## theta
-///
 /// The theta or time decay of the value of the option.
 ///
 /// $$
@@ -203,20 +138,6 @@ pub fn gamma(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
 /// $$
 /// Put \Theta $ $ - e^{-q \tau}\frac{S \varphi(d_1) \sigma}{2 \sqrt{\tau}} + rKe^{-r \tau}\Phi(-d_2) - qSe^{-q \tau}\Phi(-d_1)
 /// $$
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The asset price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The theta.
 #[allow(non_snake_case)]
 pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -237,34 +158,17 @@ pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
-/// ## vega
-///
 /// The sensitivity of the options price or a change in the asset volatility.
 ///
 /// $$
 /// \mathcal{V} $ is $ S e^{-q \tau} \varphi(d_1) \sqrt{\tau} = K e^{-r \tau} \varphi(d_2) \sqrt{\tau}
 /// $$
-///
-/// ### Arguments
-///
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The volatility of the asset.
-///
-/// ### Returns
-///
-/// f64: The vega
 #[allow(non_snake_case)]
 pub fn vega(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     S * exp(-q * T) * pdf(d1) * sqrt(T)
 }
 
-/// ## rho
-///
 /// The sensitivity of the option price to the risk free rate.
 ///
 /// Call $ \rho $ is $ K \tau e^{-r \tau}\Phi(d_2) $
@@ -273,20 +177,6 @@ pub fn vega(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
 ///
 /// Useful for all options except futures options which should use
 /// futures_rho.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The asset price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The rho.
 #[allow(non_snake_case)]
 pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -298,23 +188,7 @@ pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64
     }
 }
 
-/// ## carry
-///
 /// Sensitivity to the cost of carry.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The asset price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The carry.
 #[allow(non_snake_case)]
 pub fn carry(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
@@ -325,23 +199,7 @@ pub fn carry(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f
     }
 }
 
-/// ## elasticity
-///
 /// The option elasticity.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The asset price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The elasticity.
 #[allow(non_snake_case)]
 pub fn elasticity(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     delta(is_call, S, K, T, r, q, v) * S / price(is_call, S, K, T, r, q, v)
@@ -368,8 +226,6 @@ pub fn forward_delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f
     }
 }
 
-/// ## vanna
-///
 /// The sensitivity to the spot price and volatility.
 ///
 /// $$
@@ -377,39 +233,24 @@ pub fn forward_delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f
 /// $$
 ///
 /// Also known as DdeltaDvol.
-///
-/// ### Arguments
-///
-/// * S (f64): The asset price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * q (f64): The dividend yield.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The vanna.
 #[allow(non_snake_case)]
 pub fn vanna(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as DdeltaDvol.
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
     -exp(-q * T) * d2 / v * pdf(d1)
 }
 
+/// Also known as DVannaDvol
 #[allow(non_snake_case)]
 pub fn ddelta_dvol_dvol(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as DVannaDvol
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
     vanna(S, K, T, r, q, v) * 1.0 / v * (d1 * d2 - d1 / d2 - 1.0)
 }
 
+/// Also known as DdeltaDtime
 #[allow(non_snake_case)]
 pub fn charm(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as DdeltaDtime
-
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
 
@@ -429,16 +270,16 @@ pub fn saddle_gamma(K: f64, q: f64, v: f64) -> f64 {
     sqrt(exp(1.0) / f64::consts::PI) * sqrt((2.0 * -q) / (v * v) + 1.0) / K
 }
 
+/// Also known as speed
 #[allow(non_snake_case)]
 pub fn dgamma_dspot(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as Speed
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     -gamma(S, K, T, r, q, v) * (1.0 + d1 / (v * sqrt(T))) / S
 }
 
+/// Also known as zomma.
 #[allow(non_snake_case)]
 pub fn dgamma_dvol(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as zomma.
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
     gamma(S, K, T, r, q, v) * ((d1 * d2 - 1.0) / v)
@@ -451,9 +292,9 @@ pub fn dgamma_dtime(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     gamma(S, K, T, r, q, v) * (q + (r - q) * d1 / (v * sqrt(T)) + (1.0 - d1 * d2) / (2.0 * T))
 }
 
+/// Also known as SpeedP.
 #[allow(non_snake_case)]
 pub fn dgammap_dspot(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as SpeedP.
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     -gamma(S, K, T, r, q, v) * (d1) / (100.0 * v * sqrt(T))
 }
@@ -479,9 +320,9 @@ pub fn dvega_dtime(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     vega(S, K, T, r, q, v) * (q + (r - q) * d1 / (v * sqrt(T)) - (1.0 + d1 * d2) / (2.0 * T))
 }
 
+/// Also known as DvegaDvol
 #[allow(non_snake_case)]
 pub fn vomma(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as DvegaDvol
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
     vega(S, K, T, r, q, v) * d1 * d2 / v
@@ -494,9 +335,9 @@ pub fn dvomma_dvol(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
     vomma(S, K, T, r, q, v) * 1.0 / v * (d1 * d2 - d1 / d2 - d2 / d1 - 1.0)
 }
 
+/// Also known as VommaP.
 #[allow(non_snake_case)]
 pub fn dvegap_dvol(S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as VommaP.
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
     vegap(S, K, T, r, q, v) * d1 * d2 / v
@@ -547,9 +388,9 @@ pub fn futures_rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64
     -T * price(is_call, S, K, T, r, 0.0, v)
 }
 
+/// Also known as rho2.
 #[allow(non_snake_case)]
 pub fn phi(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // Also known as rho2.
     let d1 = (log(S / K) + T * (r - q + (v * v) / 2.0)) / (v * sqrt(T));
     if is_call {
         -T * S * exp(-q * T) * cdf(d1)
@@ -580,6 +421,7 @@ pub fn dzeta_dtime(is_call: bool, S: f64, K: f64, T: f64, r: f64, q: f64, v: f64
     }
 }
 
+/// Risk neutral break even probability.
 #[allow(non_snake_case)]
 pub fn break_even_probability(
     is_call: bool,
@@ -590,7 +432,6 @@ pub fn break_even_probability(
     q: f64,
     v: f64,
 ) -> f64 {
-    // Risk neutral break even probability.
     if is_call {
         let K = K + price(true, S, K, T, r, q, v) * exp(r * T);
         let d2 = (log(S / K) + (r - q - (v * v) / 2.0) * T) / (v * sqrt(T));
@@ -701,13 +542,12 @@ pub fn delta_from_in_the_money_prob(
     }
 }
 
+/// What asset price that gives maximum DdeltaDvol
+///
+/// is_lower == True gives lower asset level that gives max DdeltaDvol
+/// is_lower == False gives upper asset level that gives max DdeltaDvol
 #[allow(non_snake_case)]
 pub fn max_ddelta_dvol_asset(is_lower: bool, K: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // What asset price that gives maximum DdeltaDvol
-    //
-    // is_lower == True gives lower asset level that gives max DdeltaDvol
-    // is_lower == False gives upper asset level that gives max DdeltaDvol
-
     if is_lower {
         K * exp((q - r) * T - v * sqrt(T) * sqrt(4.0 + T * (v * v)) / 2.0)
     } else {
@@ -715,13 +555,12 @@ pub fn max_ddelta_dvol_asset(is_lower: bool, K: f64, T: f64, r: f64, q: f64, v: 
     }
 }
 
+/// What strike price that gives maximum DdeltaDvol
+///
+/// is_lower == True gives lower strike level that gives max DdeltaDvol
+/// is_lower == False gives upper strike level that gives max DdeltaDvol
 #[allow(non_snake_case)]
 pub fn max_ddelta_dvol_strike(is_lower: bool, S: f64, T: f64, r: f64, q: f64, v: f64) -> f64 {
-    // What strike price that gives maximum DdeltaDvol
-    //
-    // is_lower == True gives lower strike level that gives max DdeltaDvol
-    // is_lower == False gives upper strike level that gives max DdeltaDvol
-
     if is_lower {
         S * exp((r - q) * T - v * sqrt(T) * sqrt(4.0 + T * v * 2.0) / 2.0)
     } else {
@@ -729,21 +568,21 @@ pub fn max_ddelta_dvol_strike(is_lower: bool, S: f64, T: f64, r: f64, q: f64, v:
     }
 }
 
+/// What strike price that gives maximum gamma and vega
 #[allow(non_snake_case)]
 pub fn max_gamma_vega_at_X(S: f64, r: f64, q: f64, T: f64, v: f64) -> f64 {
-    // What strike price that gives maximum gamma and vega
     S * exp((r - q + v * v / 2.0) * T)
 }
 
+/// What asset price that gives maximum gamma
 #[allow(non_snake_case)]
 pub fn max_gamma_at_S(x: f64, r: f64, q: f64, T: f64, v: f64) -> f64 {
-    // What asset price that gives maximum gamma
     x * exp((q - r - 3.0 * v * v / 2.0) * T)
 }
 
+/// What asset price that gives maximum vega
 #[allow(non_snake_case)]
 pub fn max_vega_at_S(K: f64, r: f64, q: f64, T: f64, v: f64) -> f64 {
-    // What asset price that gives maximum vega
     K * exp((q - r + v * v / 2.0) * T)
 }
 
@@ -950,27 +789,14 @@ mod tests {
                 0.125,
             ),
         ] {
-            let actual = ivol(
-                is_call,
-                S,
-                K,
-                T,
-                r,
-                q,
-                p,
-                Some(100),
-                Some(f64::EPSILON / 2.0),
-            );
+            let actual = ivol(is_call, S, K, T, r, q, p, 100, f64::EPSILON / 2.0);
             assert!(is_close_to(actual, expected, 1e-12));
         }
     }
 
     #[test]
     fn it_should_calc_delta() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -1063,10 +889,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_gamma() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -1159,10 +982,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_theta() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -1264,10 +1084,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_vega() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -1361,10 +1178,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_rho() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected, threshold) in [
@@ -1457,10 +1271,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_elasticity() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -1536,10 +1347,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_dgamma_dvol() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -1615,10 +1423,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_gammap() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -1693,10 +1498,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_vanna() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -1772,10 +1574,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_charm() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -1860,10 +1659,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_vegap() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -1938,10 +1734,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_vomma() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [

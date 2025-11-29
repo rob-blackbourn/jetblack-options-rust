@@ -1,27 +1,21 @@
 use libm::fabs;
 
-const MAX_ITERATIONS: i32 = 20;
-const EPSILON: f64 = 1e-8;
-
 /// Calculate the volatility of an option that is implied by the price.
 ///
 /// Args:
 ///     p (f64): The price.
 ///     price: A function to calculate the price given a volatility.
-///     max_iterations (Option<i32>): The maximum number of iterations. Defaults to 20.
-///     epsilon (Option<f64>): The maximum error. Defaults to 1e8.
+///     max_iterations (usize): The maximum number of iterations. A typical value is 20.
+///     epsilon (f64): The maximum error. A typical value is 1e8.
 ///
 /// Result:
 ///     f64: The implied volatility.
 pub fn solve_ivol(
     p: f64,
     price: impl Fn(f64) -> f64,
-    max_iterations: Option<i32>, // TODO: Should be usize?
-    epsilon: Option<f64>,
+    max_iterations: usize, // TODO: Should be usize?
+    epsilon: f64,
 ) -> f64 {
-    let max_iterations = max_iterations.unwrap_or(MAX_ITERATIONS);
-    let epsilon = epsilon.unwrap_or(EPSILON);
-
     let mut v_lo = 0.005;
     let mut v_hi = 4.0;
     let mut p_lo = price(v_lo);

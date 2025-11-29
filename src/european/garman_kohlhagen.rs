@@ -31,6 +31,18 @@
 //! * $r_f$ is foreign risk free simple interest rate
 //! * $T$ is the time to maturity (calculated according to the appropriate day count convention)
 //! * $\sigma$ is the volatility of the FX rate.
+//!
+//! Command arguments are:
+//!
+//! * is_call (bool): True for a call, false for a put.
+//! * S (f64): The asset price.
+//! * K (f64): The strike price.
+//! * T (f64): The time to expiry in years.
+//! * r (f64): The risk free rate of the base currency.
+//! * rf (f64): The risk free rate of the quote currency.
+//! * v (f64): The asset volatility.
+//! * max_iterations (int, Optional): The maximum number of iterations before a price is returned. Defaults to 20.
+//! * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
 
 use libm::{exp, log, sqrt};
 
@@ -40,27 +52,9 @@ fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
 }
 
-/// ## price
-///
-/// Garman and Kohlhagen (1983) Currency options.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The asset price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate of the base currency.
-/// * rf (f64): The risk free rate of the quote currency.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: _description_
+/// The fair value of a currency option.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, rf: f64, v: f64) -> f64 {
-    // Garman and Kohlhagen (1983) Currency options
-
     let d1 = (log(S / K) + (r - rf + (v * v) / 2.0) * T) / (v * sqrt(T));
     let d2 = d1 - v * sqrt(T);
     if is_call {
@@ -70,26 +64,7 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, rf: f64, v: f64) -> 
     }
 }
 
-/// ## ivol
-///
 /// Calculate the volatility of an option that is implied by the price.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to expiry of the option in years.
-/// * r (f64): The risk free rate of the base currency.
-/// * rf (f64): The risk free rate of the quote currency.
-/// * p (f64): The option price.
-/// * max_iterations (int, Optional): The maximum number of iterations before
-///       a price is returned. Defaults to 20.
-/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
-///
-/// ### Returns
-///
-/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -99,8 +74,8 @@ pub fn ivol(
     r: f64,
     rf: f64,
     p: f64,
-    max_iterations: Option<i32>, // = 20,
-    epsilon: Option<f64>,        // =1e-8
+    max_iterations: usize,
+    epsilon: f64,
 ) -> f64 {
     solve_ivol(
         p,
@@ -110,21 +85,8 @@ pub fn ivol(
     )
 }
 
-/// ## make_numeric_greeks
-///
-/// Make a class to generate greeks numerically using finite difference methods.
-///
-/// ### Arguments
-///
-/// * is_call (bool): If true the options is a call;  otherwise it is a put.
-///
-/// ### Returns
-///
-/// NumericGreeks: A class which can generate Greeks using finite difference
-///     methods.
-pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
-    // Normalize the price function to match that required by the finite
-    // difference methods.
+/// Return a struct to calculate greeks numerically using finite difference methods.
+pub fn fdm_greeks(is_call: bool) -> NumericGreeks {
     #[allow(non_snake_case)]
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, rf: f64, v: f64| {
         price(is_call, S, K, T, r, rf, v)

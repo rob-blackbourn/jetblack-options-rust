@@ -1,4 +1,18 @@
 //! # Optional valuation with a European binomial implementation.
+//!
+//! The following arguments are common.
+//!
+//! * is_call (bool): True for a call, false for a put.
+//! * S (f64): The current asset price.
+//! * K (f64): The option strike price
+//! * T (f64): The time to maturity of the option in years.
+//! * r (f64): The risk free rate.
+//! * b (f64): The cost of carry of the asset.
+//! * v (f64): The volatility of the asset.
+//! * n (usize): The number of the steps in the tree.
+//! * p (f64): The option price.
+//! * max_iterations (u64): The maximum number of iterations before a price is returned. Defaults to 20.
+//! * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
 
 use libm::{exp, log, pow, sqrt};
 
@@ -7,24 +21,7 @@ use crate::{
     numeric_greeks::with_carry::NumericGreeks,
 };
 
-/// ## price
-///
-/// A European binomial option pricing tree.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * b (f64): The cost of carry of the asset.
-/// * v (f64): The volatility of the asset.
-/// * n (usize): The number of the steps in the tree.
-///
-/// ### Returns
-///
-/// f64: The price of the option.
+/// The fair value.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64, n: u64) -> f64 {
     let dt = T / n as f64;
@@ -54,27 +51,7 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64, n: u
     exp(-r * T) * sum
 }
 
-/// ## ivol
-///
 /// Calculate the volatility of an option that is implied by the price.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to expiry of the option in years.
-/// * r (f64): The risk free rate.
-/// * b (f64): The cost of carry of the asset.
-/// * p (f64): The option price.
-/// * n (u64): The number of the steps in the tree.
-/// * max_iterations (u64, Optional): The maximum number of iterations before
-///       a price is returned. Defaults to 20.
-/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
-///
-/// ### Returns
-///
-/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -85,8 +62,8 @@ pub fn ivol(
     b: f64,
     p: f64,
     n: u64,
-    max_iterations: Option<i32>, // = 20,
-    epsilon: Option<f64>,        // =1e-8
+    max_iterations: usize,
+    epsilon: f64,
 ) -> f64 {
     solve_ivol(
         p,
@@ -96,21 +73,8 @@ pub fn ivol(
     )
 }
 
-/// ## make_numeric_greeks
-///
-/// Make a class to generate greeks numerically using finite difference methods.
-///
-/// ### Arguments
-///
-/// * is_call (bool): If true the options is a call;  otherwise it is a put.
-///
-/// ### Returns
-///
-/// NumericGreeks: A class which can generate Greeks using finite difference
-///  methods.
-pub fn make_numeric_greeks(is_call: bool, n: u64) -> NumericGreeks {
-    // Normalize the price function to match that required by the finite
-    // difference methods.
+/// Return a struct to calculate greeks numerically using finite difference methods.
+pub fn fdm_greeks(is_call: bool, n: u64) -> NumericGreeks {
     #[allow(non_snake_case)]
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
         price(is_call, S, K, T, r, b, v, n)
@@ -212,8 +176,8 @@ mod tests {
     #[test]
     fn it_should_calc_delta() {
         let ng = HashMap::from([
-            (true, make_numeric_greeks(true, 100)),
-            (false, make_numeric_greeks(false, 100)),
+            (true, fdm_greeks(true, 100)),
+            (false, fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -294,8 +258,8 @@ mod tests {
     #[test]
     fn it_should_calc_gamma() {
         let ng = HashMap::from([
-            (true, make_numeric_greeks(true, 100)),
-            (false, make_numeric_greeks(false, 100)),
+            (true, fdm_greeks(true, 100)),
+            (false, fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -386,8 +350,8 @@ mod tests {
     #[test]
     fn it_should_calc_theta() {
         let ng = HashMap::from([
-            (true, make_numeric_greeks(true, 100)),
-            (false, make_numeric_greeks(false, 100)),
+            (true, fdm_greeks(true, 100)),
+            (false, fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -469,8 +433,8 @@ mod tests {
     #[test]
     fn it_should_calc_vega() {
         let ng = HashMap::from([
-            (true, make_numeric_greeks(true, 100)),
-            (false, make_numeric_greeks(false, 100)),
+            (true, fdm_greeks(true, 100)),
+            (false, fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -561,8 +525,8 @@ mod tests {
     #[test]
     fn it_should_calc_rho() {
         let ng = HashMap::from([
-            (true, make_numeric_greeks(true, 100)),
-            (false, make_numeric_greeks(false, 100)),
+            (true, fdm_greeks(true, 100)),
+            (false, fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]

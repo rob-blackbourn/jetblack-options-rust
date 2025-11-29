@@ -1,10 +1,23 @@
 //! # Option pricing functions implementing the Bjerksund and Stensland (1993)
 //!
 //! American approximation.
+//!
+//! The following arguments are common:
+//!
+//! * is_call (bool): True for a call, false for a put.
+//! * S (f64): The current asset price.
+//! * K (f64): The option strike price
+//! * T (f64): The time to maturity of the option in years.
+//! * r (f64): The risk free rate.
+//! * b (f64): The cost of carry of the asset.
+//! * v (f64): The volatility of the asset.
+//! * p (f64): The option price.
+//! * max_iterations (usize): The maximum number of iterations before a price is returned.
+//! * epsilon (f64): The largest acceptable error.
 
 use libm::{exp, fmax, log, pow, sqrt};
 
-use crate::european::generalised_black_scholes::price as bs_price;
+use crate::european::generalized_black_scholes::price as bs_price;
 use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericGreeks};
 
 fn cdf(x: f64) -> f64 {
@@ -50,23 +63,7 @@ fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     }
 }
 
-/// ## price
-///
 /// The Bjerksund and Stensland (1993) American approximation.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * b (f64): The cost of carry of the asset.
-/// * v (f64): The volatility of the asset.
-///
-/// ### Returns
-///
-/// f64: The price of the option.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
     if is_call {
@@ -77,26 +74,7 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f
     }
 }
 
-/// ## ivol
-///
 /// Calculate the volatility of an option that is implied by the price.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * S (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to expiry of the option in years.
-/// * r (f64): The risk free rate.
-/// * b (f64): The cost of carry of the asset.
-/// * p (f64): The option price.
-/// * max_iterations (int, Optional): The maximum number of iterations before
-///       a price is returned. Defaults to 20.
-/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
-///
-/// ### Returns
-///
-/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -106,8 +84,8 @@ pub fn ivol(
     r: f64,
     b: f64,
     p: f64,
-    max_iterations: Option<i32>, // = 20,
-    epsilon: Option<f64>,        // =1e-8
+    max_iterations: usize,
+    epsilon: f64,
 ) -> f64 {
     solve_ivol(
         p,
@@ -117,21 +95,8 @@ pub fn ivol(
     )
 }
 
-/// ## make_numeric_greeks
-///
-/// Make a class to generate greeks numerically using finite difference methods.
-///
-/// ### Arguments
-///
-/// * is_call (bool): If true the options is a call;  otherwise it is a put.
-///
-/// ### Returns
-///
-/// NumericGreeks: A class which can generate Greeks using finite difference
-///     methods.
-pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
-    // Normalize the price function to match that required by the finite
-    // difference methods.
+/// Return a struct to calculate greeks numerically using finite difference methods.
+pub fn fdm_greeks(is_call: bool) -> NumericGreeks {
     #[allow(non_snake_case)]
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
         price(is_call, S, K, T, r, b, v)
@@ -226,10 +191,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_delta() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [
@@ -302,10 +264,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_gamma() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, q, T, v, expected) in [

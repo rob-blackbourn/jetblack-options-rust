@@ -25,6 +25,17 @@
 //! $$
 //! \Phi(x) &= \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
 //! $$
+//!
+//! The following arguments are used in this module.
+//!
+//! * is_call (bool): True for a call, false for a put.
+//! * F (f64): The price of the future.
+//! * K (f64): The strike price.
+//! * T (f64): The time to expiry in years.
+//! * r (f64): The risk free rate.
+//! * v (f64): The asset volatility.
+//! * max_iterations (usize): The maximum number of iterations before a price is returned.
+//! * epsilon (f64): The largest acceptable error.
 
 use libm::{exp, log, sqrt};
 
@@ -37,8 +48,6 @@ fn pdf(x: f64) -> f64 {
     crate::distributions::pdf(x, 0.0, 1.0)
 }
 
-/// ## price
-///
 /// Fair value of a futures/forward using Black 76.
 ///
 /// For a call:
@@ -52,19 +61,6 @@ fn pdf(x: f64) -> f64 {
 /// $$
 /// P = e^{-r \tau} [K\Phi(-d_2) -  F\Phi(-d_1)]
 /// $$
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * F (f64): The price of the future.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The option price.
 #[allow(non_snake_case)]
 pub fn price(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -77,25 +73,7 @@ pub fn price(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
-/// ## ivol
-///
 /// Calculate the volatility of a Black 76 option that is implied by the price.
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * F (f64): The current asset price.
-/// * K (f64): The option strike price
-/// * T (f64): The time to maturity of the option in years.
-/// * r (f64): The risk free rate.
-/// * p (f64): The option price.
-/// * max_iterations (int, Optional): The maximum number of iterations before
-///     a price is returned. Defaults to 20.
-/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
-///
-/// ### Returns
-///
-/// f64: The implied volatility.
 #[allow(non_snake_case)]
 pub fn ivol(
     is_call: bool,
@@ -104,8 +82,8 @@ pub fn ivol(
     T: f64,
     r: f64,
     p: f64,
-    max_iterations: Option<i32>,
-    epsilon: Option<f64>,
+    max_iterations: usize,
+    epsilon: f64,
 ) -> f64 {
     solve_ivol(
         p,
@@ -115,27 +93,12 @@ pub fn ivol(
     )
 }
 
-/// ## make_numeric_greeks
-///
-/// Make a class to generate greeks numerically using finite difference methods.
-///
-/// ### Arguments
-///
-/// * is_call (bool): If true the options is a call;  otherwise it is a put.
-///
-/// ### Returns
-///
-/// * NumericGreeks: A class which can generate Greeks using finite difference
-///     methods.
-pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
-    // Normalize the price function to match that required by the finite
-    // difference methods.
+/// Return a struct to calculate greeks numerically using finite difference methods.
+pub fn fdm_greeks(is_call: bool) -> NumericGreeks {
     #[allow(non_snake_case)]
     NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
 }
 
-/// ## delta
-///
 /// The sensitivity of the option to a change in the asset price
 /// using Black 76.
 ///
@@ -150,19 +113,6 @@ pub fn make_numeric_greeks(is_call: bool) -> NumericGreeks {
 /// $$
 /// \frac{\partial P}{\partial S} = -e^{-r \tau} \Phi(-d_1)
 /// $$
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * F (f64): The current futures price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The volatility.
-///
-/// ### Returns
-///
-/// f64: The delta.
 #[allow(non_snake_case)]
 pub fn delta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
@@ -173,8 +123,6 @@ pub fn delta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
-/// ## gamma
-///
 /// The second derivative to the change in asset price using Black 76.
 ///
 /// The gamma for both calls and puts.
@@ -182,18 +130,6 @@ pub fn delta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// $$
 /// \frac{\partial^2 V}{\partial S^2} = e^{-r \tau} \frac{\varphi(d_1)}{F\sigma\sqrt{\tau}} = K e^{-r \tau} \frac{\varphi(d_2)}{F^2\sigma\sqrt{\tau}}
 /// $$
-///
-/// ### Arguments
-///
-/// * F (f64): The current futures price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The volatility.
-///
-/// ### Returns
-///
-/// f64: The gamma.
 #[allow(non_snake_case)]
 pub fn gamma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
@@ -201,8 +137,6 @@ pub fn gamma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     exp(-r * T) * pdf(d1) / (F * v * sqrt(T))
 }
 
-/// ## theta
-///
 /// The change in the value of the option with respect to time to expiry
 /// using Black 76.
 ///
@@ -217,19 +151,6 @@ pub fn gamma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// $$
 /// \frac{\partial P}{\partial T} - \frac{F e^{-r \tau} \varphi(d_1) \sigma}{2 \sqrt{\tau}} + rKe^{-r \tau}\Phi(-d_2) - rFe^{-r \tau}\Phi(-d_1)
 /// $$
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * F (f64): The current futures price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The volatility.
-///
-/// ### Returns
-///
-/// f64: The theta.
 #[allow(non_snake_case)]
 pub fn theta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -244,8 +165,6 @@ pub fn theta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
-/// ## vega
-///
 /// The sensitivity of the options price or a change in the asset volatility
 /// using Black 76.
 ///
@@ -254,18 +173,6 @@ pub fn theta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// $$
 /// \frac{\partial V}{\partial \sigma} = F e^{-r \tau} \varphi(d_1) \sqrt{\tau} = K e^{-r \tau} \varphi(d_2) \sqrt{\tau}
 /// $$
-///
-/// ### Arguments
-///
-/// * F (f64): The current futures price.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The volatility.
-///
-/// ### Returns
-///
-/// f64: The vega.
 #[allow(non_snake_case)]
 pub fn vega(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -273,8 +180,6 @@ pub fn vega(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     F * exp(-r * T) * pdf(d1) * sqrt(T)
 }
 
-/// ## rho
-///
 /// The sensitivity of the option price to a change in the risk free rate
 /// using Black 76.
 ///
@@ -289,19 +194,6 @@ pub fn vega(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// $$
 /// \frac{\partial P}{\partial r} = -\tau e^{-r \tau} [K\Phi(-d_2) -  F\Phi(-d_1)]
 /// $$
-///
-/// ### Arguments
-///
-/// * is_call (bool): True for a call, false for a put.
-/// * F (f64): The price of the future.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The rho.
 #[allow(non_snake_case)]
 pub fn rho(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
@@ -313,8 +205,6 @@ pub fn rho(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     }
 }
 
-/// ## vanna
-///
 /// The sensitivity of the option value to the underlying
 /// asset price and the volatility.
 ///
@@ -323,18 +213,6 @@ pub fn rho(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// $$
 /// \frac{\partial^2 V}{\partial F \partial \sigma} = -e^{-r \tau} \varphi(d_1) \frac{d_2}{\sigma} \, = \frac{\mathcal{V}}{F}\left[1 - \frac{d_1}{\sigma\sqrt{\tau}} \right]
 /// $$
-///
-/// ### Arguments
-///
-/// * F (f64): The price of the future.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The vanna.
 #[allow(non_snake_case)]
 pub fn vanna(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
@@ -343,8 +221,6 @@ pub fn vanna(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     -exp(-r * T) * pdf(d1) * d2 / v
 }
 
-/// ## vomma
-///
 /// The second order sensitivity to volatility.
 ///
 /// For both puts and calls.
@@ -352,18 +228,6 @@ pub fn vanna(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
 /// $$
 /// \frac{\partial^2 V}{\partial \sigma^2} = F e^{-r \tau} \varphi(d_1) \sqrt{\tau} \frac{d_1 d_2}{\sigma} = \mathcal{V}  \frac{d_1 d_2}{\sigma}
 /// $$
-///
-/// ### Arguments
-///
-/// * F (f64): The price of the future.
-/// * K (f64): The strike price.
-/// * T (f64): The time to expiry in years.
-/// * r (f64): The risk free rate.
-/// * v (f64): The asset volatility.
-///
-/// ### Returns
-///
-/// f64: The vomma
 #[allow(non_snake_case)]
 pub fn vomma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
     let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
@@ -509,17 +373,14 @@ mod tests {
                 0.125,
             ),
         ] {
-            let actual = ivol(is_call, F, K, T, r, p, None, None);
+            let actual = ivol(is_call, F, K, T, r, p, 20, 1e-8);
             assert!(is_close_to(actual, expected, 1e-9));
         }
     }
 
     #[test]
     fn it_should_calc_delta() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, F, K, r, T, v, expected, numeric_threshold) in [
@@ -605,10 +466,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_gamma() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, F, K, r, T, v, expected, threshold) in [
@@ -694,10 +552,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_theta() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, F, K, r, T, v, expected, threshold) in [
@@ -791,10 +646,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_vega() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, F, K, r, T, v, expected, threshold) in [
@@ -880,10 +732,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_rho() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, F, K, r, T, v, expected, threshold) in [
@@ -969,10 +818,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_vanna() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, _q, T, v, expected) in [
@@ -1047,10 +893,7 @@ mod tests {
 
     #[test]
     fn it_should_calc_vomma() {
-        let ng = HashMap::from([
-            (true, make_numeric_greeks(true)),
-            (false, make_numeric_greeks(false)),
-        ]);
+        let ng = HashMap::from([(true, fdm_greeks(true)), (false, fdm_greeks(false))]);
 
         #[allow(non_snake_case)]
         for (is_call, S, K, r, _q, T, v, expected) in [

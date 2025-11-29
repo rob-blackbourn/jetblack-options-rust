@@ -4,7 +4,7 @@
 //! Returns, given the desired p-value and a degree of freedom df,
 //! the corresponding chi-square value.
 //! Max. error of approximation is 3%
-//! See: https://apps.dtic.mil/sti/pdfs/ADA515532.pdf
+//! See: (<https://apps.dtic.mil/sti/pdfs/ADA515532.pdf>)
 
 use libm::{exp, fmin, log, pow, sqrt};
 
