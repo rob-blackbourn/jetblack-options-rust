@@ -1,6 +1,6 @@
 [package]
 name = "jetblack-options"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.85.0"
 description = """
@@ -16,7 +16,7 @@ repository = "https://github.com/rob-blackbourn/jetblack-options-rust.git"
 homepage = "https://github.com/rob-blackbourn/jetblack-options-rust"
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "katex.html" ]
+rustdoc-args = [ "--html-in-header", "katex-dollar.html" ]
 
 [dependencies]
 libm = "0.2.15"
