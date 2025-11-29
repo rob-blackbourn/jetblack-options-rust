@@ -1,16 +1,18 @@
-//! # Class for calculating numeric greeks for options using finite difference
-//!
-//! methods for the dividend yield style.
+//! # Class for calculating numeric greeks for options using finite difference methods for pricers using dividend yield.
+
 use crate::fdm::DifferenceMethod;
 
-pub struct NumericGreeks {
+/// A struct for calculating option sensitivities using finite difference methods for pricers using dividend yield.
+pub struct FdmGreeks {
+    /// The pricing function.
+    ///
     /// fn price(S: 64, K: f64, T, r: f64, q: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64>,
 }
 
-impl NumericGreeks {
+impl FdmGreeks {
     pub fn new(price: impl Fn(f64, f64, f64, f64, f64, f64) -> f64 + 'static) -> Self {
-        NumericGreeks {
+        FdmGreeks {
             price: Box::new(price),
         }
     }
@@ -24,8 +26,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                  // = 0.01,
-        method: DifferenceMethod, // = 'central'
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
@@ -50,8 +52,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                  // = 0.01,
-        method: DifferenceMethod, // = 'central'
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
@@ -82,8 +84,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dT: f64,                  // = 1 / 365,
-        method: DifferenceMethod, // = 'central'
+        dT: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
@@ -108,8 +110,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dv: f64,                  // = 0.001,
-        method: DifferenceMethod, // = 'central'
+        dv: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
@@ -134,8 +136,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dr: f64,                  // = 0.001,
-        method: DifferenceMethod, //  = 'central'
+        dr: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         match method {
             DifferenceMethod::Central => {
@@ -160,8 +162,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dq: f64,                  // = 0.001,
-        method: DifferenceMethod, // = 'central'
+        dq: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
@@ -186,8 +188,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dS: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         return ((self.price)(S + dS, K, T, r, q, v) - (self.price)(S - dS, K, T, r, q, v))
             / (2.0 * dS)
@@ -204,8 +206,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dS: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         return ((self.price)(S + 2.0 * dS, K, T, r, q, v)
             - 3.0 * (self.price)(S + dS, K, T, r, q, v)
@@ -223,8 +225,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                   // = 0.01
-        _method: DifferenceMethod, // = 'central'
+        dS: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S * (1.0 + dS), K, T, r, q, v) - (self.price)(S * (1.0 - dS), K, T, r, q, v))
             * 2.0
@@ -240,8 +242,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dS: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         S / 100.0
             * ((self.price)(S + dS, K, T, r, q, v) - 2.0 * (self.price)(S, K, T, r, q, v)
@@ -258,8 +260,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dv: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dv: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S, K, T, r, q, v + dv) - (self.price)(S, K, T, r, q, v - dv)) * v / 0.1 / 2.0
     }
@@ -274,9 +276,9 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                   // = 0.01,
-        dv: f64,                   // = 0.001
-        _method: DifferenceMethod, // = 'central'
+        dS: f64,
+        dv: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S + dS, K, T, r, q, v + dv)
             - (self.price)(S + dS, K, T, r, q, v - dv)
@@ -296,9 +298,9 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                   // = 0.01,
-        dT: f64,                   // = 1 / 365
-        _method: DifferenceMethod, // = 'central'
+        dS: f64,
+        dT: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S + dS, K, T + dT, r, q, v)
             - (self.price)(S + dS, K, T - dT, r, q, v)
@@ -317,9 +319,9 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dS: f64,                   // = 0.01,
-        dv: f64,                   // = 0.001
-        _method: DifferenceMethod, // = 'central'
+        dS: f64,
+        dv: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S + dS, K, T, r, q, v + dv) - 2.0 * (self.price)(S, K, T, r, q, v + dv)
             + (self.price)(S - dS, K, T, r, q, v + dv)
@@ -338,8 +340,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dv: f64,                   // = 0.001,
-        _method: DifferenceMethod, // = 'central'
+        dv: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         // DvegaDvol
         ((self.price)(S, K, T, r, q, v + dv) - 2.0 * (self.price)(S, K, T, r, q, v)
@@ -356,8 +358,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dT: f64,                   // = 1 / 365,
-        _method: DifferenceMethod, // = 'central'
+        dT: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         return ((self.price)(S, K, T + dT, r, q, v) - 2.0 * (self.price)(S, K, T, r, q, v)
             + (self.price)(S, K, T - dT, r, q, v))
@@ -373,8 +375,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dr: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dr: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S, K, T, r + dr, q, v) - (self.price)(S, K, T, r - dr, q, v)) / 2.0
     }
@@ -388,8 +390,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dq: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dq: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S, K, T, r, q - dq, v) - (self.price)(S, K, T, r, q + dq, v)) / 2.0
     }
@@ -403,8 +405,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dK: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dK: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S, K + dK, T, r, q, v) - (self.price)(S, K - dK, T, r, q, v)) / (2.0 * dK)
     }
@@ -418,8 +420,8 @@ impl NumericGreeks {
         r: f64,
         q: f64,
         v: f64,
-        dK: f64,                   // = 0.01,
-        _method: DifferenceMethod, // = 'central'
+        dK: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
         ((self.price)(S, K + dK, T, r, q, v) - 2.0 * (self.price)(S, K, T, r, q, v)
             + (self.price)(S, K - dK, T, r, q, v))

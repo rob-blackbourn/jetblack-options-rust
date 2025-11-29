@@ -39,7 +39,7 @@
 
 use libm::{exp, log, sqrt};
 
-use crate::{implied_volatility::solve_ivol, fdm::without_carry::NumericGreeks};
+use crate::{fdm::without_carry::FdmGreeks, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -94,9 +94,9 @@ pub fn ivol(
 }
 
 /// Return a struct to calculate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_call: bool) -> NumericGreeks {
+pub fn fdm_greeks(is_call: bool) -> FdmGreeks {
     #[allow(non_snake_case)]
-    NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
+    FdmGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| price(is_call, S, K, T, r, b))
 }
 
 /// The sensitivity of the option to a change in the asset price

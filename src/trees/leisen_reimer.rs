@@ -17,7 +17,7 @@
 
 use libm::{exp, fmax, log, pow, sqrt};
 
-use crate::{implied_volatility::solve_ivol, fdm::with_carry::NumericGreeks};
+use crate::{implied_volatility::solve_ivol, fdm::with_carry::FdmGreeks};
 
 fn sqr(x: f64) -> f64 {
     x * x
@@ -156,9 +156,9 @@ pub fn ivol(
 }
 
 /// Return a struct to calculate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_european: bool, is_call: bool, n: usize) -> NumericGreeks {
+pub fn fdm_greeks(is_european: bool, is_call: bool, n: usize) -> FdmGreeks {
     #[allow(non_snake_case)]
-    NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
+    FdmGreeks::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
         price(is_european, is_call, S, K, T, r, b, v, n)
     })
 }

@@ -1,21 +1,19 @@
-//! Calculating numeric greeks for options using finite difference
-//!
-//! These methods for the generalized style using cost of carry.
+//! Calculating numeric greeks for options using finite difference methods for pricers using using cost of carry.
 
 use crate::fdm::DifferenceMethod;
 
-/// A struct for calculating option sensitivities using finite difference methods.
-pub struct NumericGreeks {
+/// A struct for calculating option sensitivities using finite difference methods for pricers using cost of carry.
+pub struct FdmGreeks {
     /// A function to calculate the price of an option.
     ///
     /// fn price(S: 64, K: f64, T, r: f64, b: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64>,
 }
 
-impl NumericGreeks {
+impl FdmGreeks {
     /// Create a finite difference calculator given a pricing function.
     pub fn new(price: impl Fn(f64, f64, f64, f64, f64, f64) -> f64 + 'static) -> Self {
-        NumericGreeks {
+        FdmGreeks {
             price: Box::new(price),
         }
     }

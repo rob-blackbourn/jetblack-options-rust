@@ -43,7 +43,7 @@ use core::f64;
 use libm::{exp, fabs, log, sqrt};
 
 use crate::distributions::inv_cdf;
-use crate::{fdm::with_dividend_yield::NumericGreeks, implied_volatility::solve_ivol};
+use crate::{fdm::with_dividend_yield::FdmGreeks, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -92,11 +92,11 @@ pub fn ivol(
 }
 
 /// Return a struct to calculate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_call: bool) -> NumericGreeks {
+pub fn fdm_greeks(is_call: bool) -> FdmGreeks {
     // Normalize the price function to match that required by the finite
     // difference methods.
     #[allow(non_snake_case)]
-    NumericGreeks::new(move |S: f64, K: f64, T: f64, r: f64, q: f64, v: f64| {
+    FdmGreeks::new(move |S: f64, K: f64, T: f64, r: f64, q: f64, v: f64| {
         price(is_call, S, K, T, r, q, v)
     })
 }
