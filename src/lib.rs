@@ -1,9 +1,49 @@
-//! Option Valuations
-//!
-//! This create provides:
-//!
-//! * Option pricers
-//! * Finite different method functions for calculating greeks.
+/*!
+
+# Option models and Bumping Frameworks
+
+## Status
+
+This is work in progress.
+
+## Overview
+
+This library provides two things:
+
+- Valuation functions for options and other volatility products
+- A bumping framework to calculate sensitivities from prices
+
+## Coverage
+
+### European
+
+* Black 76
+* Black-Scholes 73
+* Black-Scholes-Merton
+* Garman Kohlhagen
+* Generalize Black-Scholes
+
+### American
+
+* Barone, Adesi and Whaley (1987)
+* Bjerksund and Stensland (1993)
+* Bjerksund and Stensland (2002)
+
+### Trees
+
+* Cox, Ross & Rubinstein
+* European Binomial
+* Jarrow-Rudd
+* Leisen Reimer
+* Trinomial
+
+### Bumping (Finite Difference Methods)
+
+* With Carry
+* Without Carry
+* With Dividend Yield
+
+*/
 
 mod distributions;
 mod implied_volatility;
@@ -13,18 +53,3 @@ pub mod european;
 pub mod fdm;
 pub mod trees;
 pub mod variance;
-
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
