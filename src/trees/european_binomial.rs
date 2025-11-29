@@ -123,6 +123,8 @@ mod tests {
 
     use libm::fabs;
 
+    use crate::numeric_greeks::DifferenceMethod;
+
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
@@ -284,7 +286,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].delta(S, K, T, r, b, v, None, None);
+            let numeric = ng[&is_call].delta(S, K, T, r, b, v, 1e-2, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, threshold));
         }
     }
@@ -366,7 +368,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, None, None);
+            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, expected, threshold),
                 "[{}].gamma({}, {}, {}, {}, {}, {})",
@@ -458,7 +460,8 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].theta(S, K, T, r, b, v, None, None);
+            let numeric =
+                ng[&is_call].theta(S, K, T, r, b, v, 1.0 / 365.0, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, threshold));
         }
     }
@@ -540,7 +543,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].vega(S, K, T, r, b, v, None, None);
+            let numeric = ng[&is_call].vega(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, expected, threshold),
                 "[{}].vega({}, {}, {}, {}, {}, {})",
@@ -632,7 +635,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].rho(S, K, T, r, b, v, None, None);
+            let numeric = ng[&is_call].rho(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, expected, threshold),
                 "[{}].rho({}, {}, {}, {}, {}, {})",

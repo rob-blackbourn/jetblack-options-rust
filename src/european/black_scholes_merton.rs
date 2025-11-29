@@ -1044,16 +1044,7 @@ mod tests {
             let analytic = delta(is_call, S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].delta(
-                S,
-                K,
-                T,
-                r,
-                q,
-                v,
-                Some(0.0001),
-                Some(DifferenceMethod::Central),
-            );
+            let numeric = ng[&is_call].delta(S, K, T, r, q, v, 0.0001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
@@ -1149,16 +1140,7 @@ mod tests {
             let analytic = gamma(S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].gamma(
-                S,
-                K,
-                T,
-                r,
-                q,
-                v,
-                Some(1e-2),
-                Some(DifferenceMethod::Central),
-            );
+            let numeric = ng[&is_call].gamma(S, K, T, r, q, v, 1e-2, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
@@ -1261,8 +1243,8 @@ mod tests {
                 r,
                 q,
                 v,
-                Some(1.0 / 365.0 / 24.0 / 60.0),
-                Some(DifferenceMethod::Central),
+                1.0 / 365.0 / 24.0 / 60.0,
+                DifferenceMethod::Central,
             );
             assert!(
                 is_close_to(numeric, analytic, threshold),
@@ -1359,16 +1341,8 @@ mod tests {
             let analytic = vega(S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric: f64 = ng[&is_call].vega(
-                S,
-                K,
-                T,
-                r,
-                q,
-                v,
-                Some(0.000001),
-                Some(DifferenceMethod::Central),
-            );
+            let numeric: f64 =
+                ng[&is_call].vega(S, K, T, r, q, v, 0.000001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
@@ -1464,16 +1438,7 @@ mod tests {
             let analytic = rho(is_call, S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].rho(
-                S,
-                K,
-                T,
-                r,
-                q,
-                v,
-                Some(0.00001),
-                Some(DifferenceMethod::Central),
-            );
+            let numeric = ng[&is_call].rho(S, K, T, r, q, v, 0.00001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].rho({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
@@ -1563,7 +1528,8 @@ mod tests {
             let analytic = elasticity(is_call, S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].elasticity(S, K, T, r, q, v, None);
+            let numeric =
+                ng[&is_call].elasticity(S, K, T, r, q, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -1641,7 +1607,8 @@ mod tests {
             let analytic = dgamma_dvol(S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].dgamma_dvol(S, K, T, r, q, v, None, None);
+            let numeric =
+                ng[&is_call].dgamma_dvol(S, K, T, r, q, v, 0.01, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -1719,7 +1686,7 @@ mod tests {
             let analytic = gammap(S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].gammap(S, K, T, r, q, v, None);
+            let numeric = ng[&is_call].gammap(S, K, T, r, q, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-5));
         }
     }
@@ -1797,7 +1764,8 @@ mod tests {
             let analytic = vanna(S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vanna(S, K, T, r, q, v, None, None);
+            let numeric =
+                ng[&is_call].vanna(S, K, T, r, q, v, 0.01, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -1875,7 +1843,17 @@ mod tests {
             let analytic = charm(is_call, S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].charm(S, K, T, r, q, v, None, None);
+            let numeric = ng[&is_call].charm(
+                S,
+                K,
+                T,
+                r,
+                q,
+                v,
+                0.01,
+                1.0 / 365.0,
+                DifferenceMethod::Central,
+            );
             assert!(is_close_to(numeric, analytic, 1e-5));
         }
     }
@@ -1953,7 +1931,7 @@ mod tests {
             let analytic = vegap(S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vegap(S, K, T, r, q, v, None);
+            let numeric = ng[&is_call].vegap(S, K, T, r, q, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-3));
         }
     }
@@ -2031,7 +2009,7 @@ mod tests {
             let analytic = vomma(S, K, T, r, q, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vomma(S, K, T, r, q, v, None);
+            let numeric = ng[&is_call].vomma(S, K, T, r, q, v, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-2));
         }
     }

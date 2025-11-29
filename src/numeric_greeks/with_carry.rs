@@ -1,39 +1,42 @@
-//! # Class for calculating numeric greeks for options using finite difference
+//! Calculating numeric greeks for options using finite difference
 //!
-//! methods for the generalised style using cost of carry.
+//! These methods for the generalized style using cost of carry.
+
 use crate::numeric_greeks::DifferenceMethod;
 
+/// A struct for calculating option sensitivities using finite difference methods.
 pub struct NumericGreeks {
+    /// A function to calculate the price of an option.
+    ///
     /// fn price(S: 64, K: f64, T, r: f64, b: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64>,
 }
 
 impl NumericGreeks {
+    /// Create a finite difference calculator given a pricing function.
     pub fn new(price: impl Fn(f64, f64, f64, f64, f64, f64) -> f64 + 'static) -> Self {
         NumericGreeks {
             price: Box::new(price),
         }
     }
 
-    /// ## delta
-    ///
     /// Calculate the delta on an option using the finite difference.
     ///
     /// The delta is calculated according to one of the three difference methods.
     ///
-    /// #### Backward difference method.
+    /// Backward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S}
     /// $$
     ///
-    /// #### Central difference method.
+    /// Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S + \Delta S, K, T, r, b, \sigma) - BS_{price}(S-\Delta S, K, T, r, b, \sigma)}{2 \Delta S}
     /// $$
     ///
-    /// #### Forward difference method.
+    /// Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S+\Delta S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta S}
@@ -47,8 +50,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
-    /// * dS (f64, optional): The absolute amount to change the asset price by. Defaults to 0.01.
-    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// * dS (f64): The absolute amount to change the asset price by. A common value is0.01.
+    /// * method (DifferenceMethod): The method to use. A common value is 'central'.
     ///
     /// ### Returns
     ///
@@ -62,11 +65,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>,
-        method: Option<DifferenceMethod>,
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 return ((self.price)(S, K, T, r, b, v) - (self.price)(S - dS, K, T, r, b, v)) / dS;
@@ -81,25 +82,23 @@ impl NumericGreeks {
         }
     }
 
-    /// ## gamma
-    ///
     /// Calculate the gamma of an option using finite difference methods.
     ///
     /// The gamma is calculated according to one of the three difference methods.
     ///
-    /// #### Backward difference method.
+    /// Backward difference method.
     ///
     /// $$
     /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S, K, T, r, b, \sigma) - 2 BS_{price}(S - \Delta S, K, T, r, b, \sigma) + BS_{price}(S - 2 \Delta S, K, T, r, b, \sigma)}{\Delta S^2}
     /// $$
     ///
-    /// #### Central difference method.
+    /// Central difference method.
     ///
     /// $$
     /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S, K, T, r, b, \sigma) + BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S^2}
     /// $$
     ///
-    /// #### Forward difference method.
+    /// Forward difference method.
     ///
     /// $$
     /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + 2 \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S + \Delta S, K, T, r, b, \sigma) + BS_{price}(S, K, T, r, b, \sigma)}{\Delta S^2}
@@ -113,8 +112,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
-    /// * dS (f64, optional): The absolute amount to change the asset price by. Defaults to 0.01.
-    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// * dS (f64): The absolute amount to change the asset price by. A common value is 0.01.
+    /// * method (DifferenceMethod): The method to use. A common value is central.
     ///
     /// ### Returns
     ///
@@ -128,11 +127,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>,                  // = 0.01,
-        method: Option<DifferenceMethod>, // = 'central'
+        dS: f64,                  // = 0.01,
+        method: DifferenceMethod, // = 'central'
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r, b, v) - 2.0 * (self.price)(S - dS, K, T, r, b, v)
@@ -153,25 +150,23 @@ impl NumericGreeks {
         }
     }
 
-    /// ## theta
-    ///
     /// Calculate the theta on an option using the finite difference.
     ///
     /// The theta is calculated according to one of the three difference methods.
     ///
-    /// #### Backward difference method.
+    /// Backward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta T}
     /// $$
     ///
-    /// #### Central difference method.
+    /// Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T + \Delta T, r, b, \sigma)}{2 \Delta T}
     /// $$
     ///
-    /// #### Forward difference method.
+    /// Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T + \Delta T, r, b, \sigma)}{\Delta T}
@@ -185,8 +180,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
-    /// * dT (f64, optional): The absolute amount to change the asset price by. Defaults to 1/365.
-    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// * dT (f64): The absolute amount to change the asset price by. A common value is 1/365.
+    /// * method (DifferenceMethod): The method to use. A common value is central.
     ///
     /// ### Returns
     ///
@@ -200,11 +195,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dT: Option<f64>,                  // = 1 / 365,
-        method: Option<DifferenceMethod>, // = 'central'
+        dT: f64,                  // = 1 / 365,
+        method: DifferenceMethod, // = 'central'
     ) -> f64 {
-        let dT = dT.unwrap_or(1.0 / 365.0);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T - dT, r, b, v) - (self.price)(S, K, T, r, b, v)) / dT
@@ -219,25 +212,23 @@ impl NumericGreeks {
         }
     }
 
-    /// ## vega
-    ///
     /// Calculate the vega on an option using the finite difference.
     ///
     /// The vega is calculated according to one of the three difference methods.
     ///
-    /// #### Backward difference method.
+    /// Backward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{\Delta \sigma}
     /// $$
     ///
-    /// #### Central difference method.
+    /// Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{2 \Delta \sigma}
     /// $$
     ///
-    /// #### Forward difference method.
+    /// Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta \sigma}
@@ -251,8 +242,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
-    /// * dV (f64, optional): The absolute amount to change the volatility by. Defaults to 0.001.
-    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// * dV (f64): The absolute amount to change the volatility by. A common value is 0.001.
+    /// * method (DifferenceMethod): The method to use. A common value is central.
     ///
     /// ### Returns
     ///
@@ -266,11 +257,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dv: Option<f64>,                  // = 0.001,
-        method: Option<DifferenceMethod>, // = 'central'
+        dv: f64,                  // = 0.001,
+        method: DifferenceMethod, // = 'central'
     ) -> f64 {
-        let dv = dv.unwrap_or(0.001);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b, v - dv)) / dv
@@ -285,25 +274,23 @@ impl NumericGreeks {
         }
     }
 
-    /// ## rho
-    ///
     /// Calculate the rho on an option using the finite difference.
     ///
     /// The rho is calculated according to one of the three difference methods.
     ///
-    /// #### Backward difference method.
+    /// Backward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{\Delta r}
     /// $$
     ///
-    /// #### Central difference method.
+    /// Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{2 \Delta r}
     /// $$
     ///
-    /// #### Forward difference method.
+    /// Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta r}
@@ -317,8 +304,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
-    /// * dr (f64, optional): The absolute amount to change the rate by. Defaults to 0.001.
-    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// * dr (f64): The absolute amount to change the rate by. A common value is 0.001.
+    /// * method (DifferenceMethod): The method to use. A common value is 'central'.
     ///
     /// ### Returns
     ///
@@ -332,11 +319,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dr: Option<f64>,                  // = 0.001,
-        method: Option<DifferenceMethod>, // = 'central'
+        dr: f64,                  // = 0.001,
+        method: DifferenceMethod, // = 'central'
     ) -> f64 {
-        let dr = dr.unwrap_or(0.001);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r + dr, b, v) - (self.price)(S, K, T, r - dr, b - dr, v))
@@ -354,25 +339,23 @@ impl NumericGreeks {
         }
     }
 
-    /// ## carry
-    ///
     /// Calculate the carry on an option using the finite difference.
     ///
     /// The carry is calculated according to one of the three difference methods.
     ///
-    /// #### Backward difference method.
+    /// Backward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{\Delta b}
     /// $$
     ///
-    /// #### Central difference method.
+    /// Central difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, T, r, b + \Delta b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{2 \Delta b}
     /// $$
     ///
-    /// #### Forward difference method.
+    /// Forward difference method.
     ///
     /// $$
     /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, T, r, b + \Delta b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta b}
@@ -386,8 +369,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
-    /// * db (f64, optional): The absolute amount to change the carry rate by. Defaults to 0.001.
-    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// * db (f64): The absolute amount to change the carry rate by. A common value is 0.001.
+    /// * method (DifferenceMethod): The method to use. A common value is 'central'.
     ///
     /// ### Returns
     ///
@@ -401,12 +384,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        db: Option<f64>,                  // = 0.001,
-        method: Option<DifferenceMethod>, // = 'central'
+        db: f64,                  // = 0.001,
+        method: DifferenceMethod, // = 'central'
     ) -> f64 {
-        let db = db.unwrap_or(0.001);
-        let method = method.unwrap_or(DifferenceMethod::Central);
-
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b - db, v)) / db
@@ -430,8 +410,8 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>,                  // = 0.01,
-        method: Option<DifferenceMethod>, // = 'central'
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         self.delta(S, K, T, r, b, v, dS, method) * S / (self.price)(S, K, T, r, b, v)
     }
@@ -445,9 +425,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01,
+        dS: f64, // = 0.01,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
         ((self.price)(S + 2.0 * dS, K, T, r, b, v) - 3.0 * (self.price)(S + dS, K, T, r, b, v)
             + 3.0 * (self.price)(S, K, T, r, b, v)
             - (self.price)(S - dS, K, T, r, b, v))
@@ -463,9 +443,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01
+        dS: f64, // = 0.01
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
         ((self.price)(S * (1.0 + dS), K, T, r, b, v) - (self.price)(S * (1.0 - dS), K, T, r, b, v))
             * 2.0
             / S
@@ -480,8 +460,8 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01,
-        method: Option<DifferenceMethod>,
+        dS: f64, // = 0.01,
+        method: DifferenceMethod,
     ) -> f64 {
         self.gamma(S, K, T, r, b, v, dS, method) * S / 100.0
     }
@@ -495,14 +475,12 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dv: Option<f64>, // = 0.001,
-        method: Option<DifferenceMethod>,
+        dv: f64, // = 0.001,
+        method: DifferenceMethod,
     ) -> f64 {
         self.vega(S, K, T, r, b, v, dv, method) * v * 10.0
     }
 
-    /// ## vanna
-    ///
     /// The second order derivative of the option price to a change in the asset
     /// price and a change in the volatility.
     ///
@@ -514,8 +492,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The asset volatility.
-    /// * dS (f64, optional): The change in spot price. Defaults to 0.01.
-    /// * dv (f64, optional): The change in volatility. Defaults to 0.01.
+    /// * dS (f64): The change in spot price. A common value is 0.01.
+    /// * dv (f64): The change in volatility. A common value is 0.01.
     ///
     /// ### Returns
     ///
@@ -529,11 +507,10 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01,
-        dv: Option<f64>, // = 0.001
+        dS: f64, // = 0.01,
+        dv: f64, // = 0.001
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let dv = dv.unwrap_or(0.001);
         // Also known as DdeltaDvol
         ((self.price)(S + dS, K, T, r, b, v + dv)
             - (self.price)(S + dS, K, T, r, b, v - dv)
@@ -543,8 +520,6 @@ impl NumericGreeks {
             / dv
     }
 
-    /// ## charm
-    ///
     /// Measures the instantaneous rate of change of delta over the passage of
     /// time.
     ///
@@ -558,8 +533,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The asset volatility.
-    /// * dS (f64, optional): Change in asset price. Defaults to 0.01.
-    /// * dT (f64, optional): Change in time. Defaults to 1/365.
+    /// * dS (f64): Change in asset price. A common value is 0.01.
+    /// * dT (f64): Change in time. A common value is 1/365.
     ///
     /// ### Returns
     ///
@@ -573,12 +548,10 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01,
-        dT: Option<f64>, // = 1 / 365
+        dS: f64, // = 0.01,
+        dT: f64, // = 1 / 365
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let dT = dT.unwrap_or(1.0 / 365.0);
-
         // Also known as DdeltaDtime
         ((self.price)(S + dS, K, T + dT, r, b, v)
             - (self.price)(S + dS, K, T - dT, r, b, v)
@@ -597,11 +570,10 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01,
-        dv: Option<f64>, // = 0.001
+        dS: f64, // = 0.01,
+        dv: f64, // = 0.001
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let dv = dv.unwrap_or(0.001);
         ((self.price)(S + dS, K, T, r, b, v + dv) - 2.0 * (self.price)(S, K, T, r, b, v + dv)
             + (self.price)(S - dS, K, T, r, b, v + dv)
             - (self.price)(S + dS, K, T, r, b, v - dv)
@@ -610,9 +582,9 @@ impl NumericGreeks {
             / (2.0 * dv * (dS * dS))
     }
 
-    /// ## vomma
-    ///
     /// Calculate the vomma of an option using finite difference methods.
+    ///
+    /// Also known as DvegaDvol.
     ///
     /// The vomma is calculated according to one of the three difference methods.
     ///
@@ -643,8 +615,8 @@ impl NumericGreeks {
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
-    /// * dv (f64, optional): The absolute amount to change the volatility price by. Defaults to 0.001.
-    /// * method (DifferenceMethod, optional): The method to use. Defaults to 'central'.
+    /// * dv (f64): The absolute amount to change the volatility price by. A common value is 0.001.
+    /// * method (DifferenceMethod): The method to use. A common value is 'central'.
     ///
     /// ### Returns
     ///
@@ -658,10 +630,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dv: Option<f64>, // = 0.001,
+        dv: f64, // = 0.001,
+        _method: DifferenceMethod,
     ) -> f64 {
-        // DvegaDvol
-        let dv = dv.unwrap_or(0.001);
         return ((self.price)(S, K, T, r, b, v + dv) - 2.0 * (self.price)(S, K, T, r, b, v)
             + (self.price)(S, K, T, r, b, v - dv))
             / (dv * dv);
@@ -676,9 +647,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dT: Option<f64>, //  = 1 / 365,
+        dT: f64, //  = 1 / 365,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dT = dT.unwrap_or(1.0 / 365.0);
         ((self.price)(S, K, T + dT, r, b, v) - 2.0 * (self.price)(S, K, T, r, b, v)
             + (self.price)(S, K, T - dT, r, b, v))
             / (dT * dT)
@@ -693,9 +664,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dr: Option<f64>, // = 0.01,
+        dr: f64, // = 0.01,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dr = dr.unwrap_or(0.01);
         ((self.price)(S, K, T, r + dr, b, v) - (self.price)(S, K, T, r - dr, b, v)) / 2.0
     }
 
@@ -708,9 +679,9 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        db: Option<f64>, // = 0.01,
+        db: f64, // = 0.01,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let db = db.unwrap_or(0.01);
         ((self.price)(S, K, T, r, b - db, v) - (self.price)(S, K, T, r, b + db, v)) / 2.0
     }
 
@@ -723,9 +694,8 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dK: Option<f64>, // = 0.01,
+        dK: f64, // = 0.01,
     ) -> f64 {
-        let dK = dK.unwrap_or(0.01);
         ((self.price)(S, K + dK, T, r, b, v) - (self.price)(S, K - dK, T, r, b, v)) / (2.0 * dK)
     }
 
@@ -738,9 +708,8 @@ impl NumericGreeks {
         r: f64,
         b: f64,
         v: f64,
-        dK: Option<f64>, // = 0.01,
+        dK: f64, // = 0.01,
     ) -> f64 {
-        let dK = dK.unwrap_or(0.01);
         ((self.price)(S, K + dK, T, r, b, v) - 2.0 * (self.price)(S, K, T, r, b, v)
             + (self.price)(S, K - dK, T, r, b, v))
             / (dK * dK)

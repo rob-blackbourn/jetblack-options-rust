@@ -1,6 +1,6 @@
-//! # Class for calculating numeric greeks for options using finite difference
+//! Calculating numeric greeks for options using finite difference
 //!
-//! methods for the style with no carry or dividend yield.
+//! Methods for the style with no carry or dividend yield.
 
 use crate::numeric_greeks::DifferenceMethod;
 
@@ -16,8 +16,6 @@ impl NumericGreeks {
         }
     }
 
-    /// ## delta
-    ///
     /// Numeric calculation of delta.
     ///
     /// ### Arguments
@@ -27,8 +25,8 @@ impl NumericGreeks {
     /// * T (f64): The time to expiry in years.
     /// * r (f64): the risk free rate.
     /// * v (f64): The volatility.
-    /// * dS (Option<f64>): The asset price bump. Defaults to 0.01.
-    /// * method (Option<DifferenceMethod>): The difference method. Defaults to Central.
+    /// * dS (f64): The asset price bump. A common choice is 0.01.
+    /// * method (DifferenceMethod): The difference method. A common choice is Central.
     #[allow(non_snake_case)]
     pub fn delta(
         &self,
@@ -37,11 +35,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>,
-        method: Option<DifferenceMethod>,
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r, v) - (self.price)(S - dS, K, T, r, v)) / dS
@@ -63,11 +59,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>,
-        method: Option<DifferenceMethod>,
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r, v) - 2.0 * (self.price)(S - dS, K, T, r, v)
@@ -95,11 +89,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dT: Option<f64>,                  // = 1.0 / 365.0,
-        method: Option<DifferenceMethod>, // = 'central'
+        dT: f64,                  // = 1.0 / 365.0,
+        method: DifferenceMethod, // = 'central'
     ) -> f64 {
-        let dT = dT.unwrap_or(1.0 / 365.0);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T - dT, r, v) - (self.price)(S, K, T, r, v)) / dT
@@ -121,11 +113,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dv: Option<f64>,                  // = 0.001,
-        method: Option<DifferenceMethod>, // = 'central'
+        dv: f64,                  // = 0.001,
+        method: DifferenceMethod, // = 'central'
     ) -> f64 {
-        let dv = dv.unwrap_or(0.001);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r, v) - (self.price)(S, K, T, r, v - dv)) / dv
@@ -147,11 +137,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dr: Option<f64>,                  // = 0.001,
-        method: Option<DifferenceMethod>, // = 'central'
+        dr: f64,                  // = 0.001,
+        method: DifferenceMethod, // = central
     ) -> f64 {
-        let dr = dr.unwrap_or(0.001);
-        let method = method.unwrap_or(DifferenceMethod::Central);
         match method {
             DifferenceMethod::Backward => {
                 ((self.price)(S, K, T, r, v) - (self.price)(S, K, T, r - dr, v)) / dr
@@ -173,17 +161,23 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>,
-        method: Option<DifferenceMethod>,
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let method = method.unwrap_or(DifferenceMethod::Central);
-        self.delta(S, K, T, r, v, Some(dS), Some(method)) * S / (self.price)(S, K, T, r, v)
+        self.delta(S, K, T, r, v, dS, method) * S / (self.price)(S, K, T, r, v)
     }
 
     #[allow(non_snake_case)]
-    pub fn speed(&self, S: f64, K: f64, T: f64, r: f64, v: f64, dS: Option<f64>) -> f64 {
-        let dS = dS.unwrap_or(0.01);
+    pub fn speed(
+        &self,
+        S: f64,
+        K: f64,
+        T: f64,
+        r: f64,
+        v: f64,
+        dS: f64,
+        _method: DifferenceMethod,
+    ) -> f64 {
         ((self.price)(S + 2.0 * dS, K, T, r, v) - 3.0 * (self.price)(S + dS, K, T, r, v)
             + 3.0 * (self.price)(S, K, T, r, v)
             - (self.price)(S - dS, K, T, r, v))
@@ -198,9 +192,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01,
+        dS: f64, // = 0.01,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
         ((self.price)(S * (1.0 + dS), K, T, r, v) - (self.price)(S * (1.0 - dS), K, T, r, v))
             / (2.0 * S)
     }
@@ -213,18 +207,27 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>,
-        method: Option<DifferenceMethod>,
+        dS: f64,
+        method: DifferenceMethod,
     ) -> f64 {
         S / 100.0 * self.gamma(S, K, T, r, v, dS, method)
     }
 
     #[allow(non_snake_case)]
-    pub fn vegap(&self, S: f64, K: f64, T: f64, r: f64, v: f64, dv: Option<f64>) -> f64 {
-        let dv = dv.unwrap_or(0.01);
+    pub fn vegap(
+        &self,
+        S: f64,
+        K: f64,
+        T: f64,
+        r: f64,
+        v: f64,
+        dv: f64,
+        _method: DifferenceMethod,
+    ) -> f64 {
         ((self.price)(S, K, T, r, v + dv) - (self.price)(S, K, T, r, v - dv)) * v / 0.1 / 2.0
     }
 
+    /// Also known as DdeltaDvol
     #[allow(non_snake_case)]
     pub fn vanna(
         &self,
@@ -233,12 +236,10 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>,
-        dv: Option<f64>,
+        dS: f64,
+        dv: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let dv = dv.unwrap_or(0.001);
-        // Also known as DdeltaDvol
         ((self.price)(S + dS, K, T, r, v + dv)
             - (self.price)(S + dS, K, T, r, v - dv)
             - (self.price)(S - dS, K, T, r, v + dv)
@@ -247,6 +248,7 @@ impl NumericGreeks {
             / dv
     }
 
+    /// Also known as DdeltaDtime
     #[allow(non_snake_case)]
     pub fn charm(
         &self,
@@ -255,12 +257,10 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>,
-        dT: Option<f64>,
+        dS: f64,
+        dT: f64,
+        _method: DifferenceMethod,
     ) -> f64 {
-        // Also known as DdeltaDtime
-        let dS = dS.unwrap_or(0.01);
-        let dT = dT.unwrap_or(1.0 / 365.0);
         ((self.price)(S + dS, K, T + dT, r, v)
             - (self.price)(S + dS, K, T - dT, r, v)
             - (self.price)(S - dS, K, T + dT, r, v)
@@ -277,11 +277,10 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dS: Option<f64>, // = 0.01,
-        dv: Option<f64>, // = 0.01
+        dS: f64, // = 0.01,
+        dv: f64, // = 0.01
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dS = dS.unwrap_or(0.01);
-        let dv = dv.unwrap_or(0.01);
         ((self.price)(S + dS, K, T, r, v + dv) - 2.0 * (self.price)(S, K, T, r, v + dv)
             + (self.price)(S - dS, K, T, r, v + dv)
             - (self.price)(S + dS, K, T, r, v - dv)
@@ -291,6 +290,7 @@ impl NumericGreeks {
             / 100.0
     }
 
+    /// Also known as DvegaDvol
     #[allow(non_snake_case)]
     pub fn vomma(
         &self,
@@ -299,10 +299,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dv: Option<f64>, // = 0.001,
+        dv: f64, // = 0.001,
+        _method: DifferenceMethod,
     ) -> f64 {
-        // DvegaDvol
-        let dv = dv.unwrap_or(0.001);
         ((self.price)(S, K, T, r, v + dv) - 2.0 * (self.price)(S, K, T, r, v)
             + (self.price)(S, K, T, r, v - dv))
             / (dv * dv)
@@ -316,9 +315,9 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dT: Option<f64>, // = 1 / 365,
+        dT: f64, // = 1 / 365,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dT = dT.unwrap_or(1.0 / 365.0);
         ((self.price)(S, K, T + dT, r, v) - 2.0 * (self.price)(S, K, T, r, v)
             + (self.price)(S, K, T - dT, r, v))
             / (dT * dT)
@@ -332,10 +331,10 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dX: Option<f64>, // = 0.01,
+        dK: f64, // = 0.01,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dX = dX.unwrap_or(0.01);
-        ((self.price)(S, K + dX, T, r, v) - (self.price)(S, K - dX, T, r, v)) / (2.0 * dX)
+        ((self.price)(S, K + dK, T, r, v) - (self.price)(S, K - dK, T, r, v)) / (2.0 * dK)
     }
 
     #[allow(non_snake_case)]
@@ -346,11 +345,11 @@ impl NumericGreeks {
         T: f64,
         r: f64,
         v: f64,
-        dX: Option<f64>, // = 0.01,
+        dK: f64, // = 0.01,
+        _method: DifferenceMethod,
     ) -> f64 {
-        let dX = dX.unwrap_or(0.01);
-        ((self.price)(S, K + dX, T, r, v) - 2.0 * (self.price)(S, K, T, r, v)
-            + (self.price)(S, K - dX, T, r, v))
-            / (dX * dX)
+        ((self.price)(S, K + dK, T, r, v) - 2.0 * (self.price)(S, K, T, r, v)
+            + (self.price)(S, K - dK, T, r, v))
+            / (dK * dK)
     }
 }
