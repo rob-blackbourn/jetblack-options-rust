@@ -20,7 +20,7 @@
 
 use libm::{exp, fmax, pow, sqrt};
 
-use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericGreeks};
+use crate::{implied_volatility::solve_ivol, fdm::with_carry::NumericGreeks};
 
 /// The option greeks calculated by the model.
 pub struct Greeks {
@@ -148,7 +148,7 @@ mod tests {
 
     use libm::fabs;
 
-    use crate::numeric_greeks::DifferenceMethod;
+    use crate::fdm::DifferenceMethod;
 
     use super::*;
 

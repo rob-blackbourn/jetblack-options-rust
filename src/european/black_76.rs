@@ -39,7 +39,7 @@
 
 use libm::{exp, log, sqrt};
 
-use crate::{implied_volatility::solve_ivol, numeric_greeks::without_carry::NumericGreeks};
+use crate::{implied_volatility::solve_ivol, fdm::without_carry::NumericGreeks};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -242,7 +242,7 @@ mod tests {
 
     use libm::fabs;
 
-    use crate::numeric_greeks::DifferenceMethod;
+    use crate::fdm::DifferenceMethod;
 
     use super::*;
 

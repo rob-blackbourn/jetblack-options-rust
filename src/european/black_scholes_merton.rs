@@ -43,7 +43,7 @@ use core::f64;
 use libm::{exp, fabs, log, sqrt};
 
 use crate::distributions::inv_cdf;
-use crate::{implied_volatility::solve_ivol, numeric_greeks::with_dividend_yield::NumericGreeks};
+use crate::{fdm::with_dividend_yield::NumericGreeks, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -645,7 +645,7 @@ mod tests {
 
     use libm::fabs;
 
-    use crate::numeric_greeks::DifferenceMethod;
+    use crate::fdm::DifferenceMethod;
 
     use super::*;
 

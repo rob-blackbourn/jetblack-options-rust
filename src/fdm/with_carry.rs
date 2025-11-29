@@ -2,7 +2,7 @@
 //!
 //! These methods for the generalized style using cost of carry.
 
-use crate::numeric_greeks::DifferenceMethod;
+use crate::fdm::DifferenceMethod;
 
 /// A struct for calculating option sensitivities using finite difference methods.
 pub struct NumericGreeks {

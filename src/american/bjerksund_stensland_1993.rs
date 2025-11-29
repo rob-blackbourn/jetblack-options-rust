@@ -18,7 +18,7 @@
 use libm::{exp, fmax, log, pow, sqrt};
 
 use crate::european::generalized_black_scholes::price as bs_price;
-use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericGreeks};
+use crate::{implied_volatility::solve_ivol, fdm::with_carry::NumericGreeks};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)
@@ -109,7 +109,7 @@ mod tests {
 
     use libm::fabs;
 
-    use crate::numeric_greeks::DifferenceMethod;
+    use crate::fdm::DifferenceMethod;
 
     use super::*;
 

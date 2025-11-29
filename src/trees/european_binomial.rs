@@ -18,7 +18,7 @@ use libm::{exp, log, pow, sqrt};
 
 use crate::{
     distributions::binomial_coefficient::comb, implied_volatility::solve_ivol,
-    numeric_greeks::with_carry::NumericGreeks,
+    fdm::with_carry::NumericGreeks,
 };
 
 /// The fair value.
@@ -87,7 +87,7 @@ mod tests {
 
     use libm::fabs;
 
-    use crate::numeric_greeks::DifferenceMethod;
+    use crate::fdm::DifferenceMethod;
 
     use super::*;
 

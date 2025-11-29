@@ -1,7 +1,7 @@
 //! # Class for calculating numeric greeks for options using finite difference
 //!
 //! methods for the dividend yield style.
-use crate::numeric_greeks::DifferenceMethod;
+use crate::fdm::DifferenceMethod;
 
 pub struct NumericGreeks {
     /// fn price(S: 64, K: f64, T, r: f64, q: f64, v: f64) -> f64

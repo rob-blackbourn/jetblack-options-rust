@@ -18,7 +18,7 @@
 use libm::{exp, fmax, sqrt};
 use std::cmp::max;
 
-use crate::{implied_volatility::solve_ivol, numeric_greeks::with_carry::NumericGreeks};
+use crate::{implied_volatility::solve_ivol, fdm::with_carry::NumericGreeks};
 
 fn sqr(x: f64) -> f64 {
     x * x

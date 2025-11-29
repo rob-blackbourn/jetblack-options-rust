@@ -46,7 +46,7 @@
 
 use libm::{exp, log, sqrt};
 
-use crate::{implied_volatility::solve_ivol, numeric_greeks::with_dividend_yield::NumericGreeks};
+use crate::{fdm::with_dividend_yield::NumericGreeks, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
     crate::distributions::cdf(x, 0.0, 1.0)

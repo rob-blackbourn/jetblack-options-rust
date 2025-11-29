@@ -1,9 +1,16 @@
+//! Option Valuations
+//!
+//! This create provides:
+//!
+//! * Option pricers
+//! * Finite different method functions for calculating greeks.
+
 mod distributions;
 mod implied_volatility;
 
 pub mod american;
 pub mod european;
-pub mod numeric_greeks;
+pub mod fdm;
 pub mod trees;
 pub mod variance;
 

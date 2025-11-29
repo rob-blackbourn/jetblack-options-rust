@@ -2,7 +2,7 @@
 //!
 //! Methods for the style with no carry or dividend yield.
 
-use crate::numeric_greeks::DifferenceMethod;
+use crate::fdm::DifferenceMethod;
 
 pub struct NumericGreeks {
     /// fn price(S: 64, K: f64, T, r: f64, v: f64) -> f64
