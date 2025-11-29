@@ -2,6 +2,18 @@
 name = "jetblack-options"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.60.0"
+description = """
+Functions for calculating option values and sensitivities, both analytically
+and using and finite difference methods.
+"""
+authors = ["Rob Blackbourn <rob.blackbourn@gmail.com"]
+license = "MIT"
+keywords = ["option", "options", "valuation", "derivatives"]
+categories = ["finance"]
+readme = "README.md"
+repository = "https://github.com/rob-blackbourn/jetblack-options-rust.git"
+homepage = "https://github.com/rob-blackbourn/jetblack-options-rust"
 
 [package.metadata.docs.rs]
 rustdoc-args = [ "--html-in-header", "katex.html" ]
