@@ -14,7 +14,7 @@
 //! * is_call (bool): True for a call, false for a put.
 //! * S (f64): The current asset price.
 //! * K (f64): The option strike price
-//! * T (f64): The time to expiry of the option in years.
+//! * t (f64): The time to expiry of the option in years.
 //! * r (f64): The risk free rate.
 //! * b (f64): The cost of carry of the asset.
 //! * v (f64): The volatility of the asset.
@@ -39,14 +39,14 @@ pub struct GeneralizedBlackScholes {}
 impl GeneralizedBlackScholes {
     /// The fair value of a European option, using Black-Scholes-Merton.
     #[allow(non_snake_case)]
-    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + T * (b + (v * v) / 2.0)) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + t * (b + (v * v) / 2.0)) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
 
         if is_call {
-            S * exp((b - r) * T) * cdf(d1) - K * exp(-r * T) * cdf(d2)
+            S * exp((b - r) * t) * cdf(d1) - K * exp(-r * t) * cdf(d2)
         } else {
-            K * exp(-r * T) * cdf(-d2) - S * exp((b - r) * T) * cdf(-d1)
+            K * exp(-r * t) * cdf(-d2) - S * exp((b - r) * t) * cdf(-d1)
         }
     }
 
@@ -56,7 +56,7 @@ impl GeneralizedBlackScholes {
         is_call: bool,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         p: f64,
@@ -65,7 +65,7 @@ impl GeneralizedBlackScholes {
     ) -> f64 {
         solve_ivol(
             p,
-            |v| GeneralizedBlackScholes::price(is_call, S, K, T, r, b, v),
+            |v| GeneralizedBlackScholes::price(is_call, S, K, t, r, b, v),
             max_iterations,
             epsilon,
         )
@@ -74,47 +74,47 @@ impl GeneralizedBlackScholes {
     /// Return a struct to calculate greeks numerically using finite difference methods.
     pub fn fdm_greeks(is_call: bool) -> FdmWithCarry {
         #[allow(non_snake_case)]
-        FdmWithCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
-            GeneralizedBlackScholes::price(is_call, S, K, T, r, b, v)
+        FdmWithCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64, v: f64| {
+            GeneralizedBlackScholes::price(is_call, S, K, t, r, b, v)
         })
     }
 
     /// The sensitivity of the option to a change in the asset price.
     #[allow(non_snake_case)]
-    pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + T * (b + (v * v) / 2.0)) / (v * sqrt(T));
+    pub fn delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + t * (b + (v * v) / 2.0)) / (v * sqrt(t));
 
         if is_call {
-            exp((b - r) * T) * cdf(d1)
+            exp((b - r) * t) * cdf(d1)
         } else {
-            -exp((b - r) * T) * cdf(-d1)
+            -exp((b - r) * t) * cdf(-d1)
         }
     }
 
     /// The second derivative to the change in the asset price.
     #[allow(non_snake_case)]
-    pub fn gamma(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + T * (b + (v * v) / 2.0)) / (v * sqrt(T));
+    pub fn gamma(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + t * (b + (v * v) / 2.0)) / (v * sqrt(t));
 
-        exp((b - r) * T) * pdf(d1) / (S * v * sqrt(T))
+        exp((b - r) * t) * pdf(d1) / (S * v * sqrt(t))
     }
 
     /// The theta or time decay of the value of the option.
     #[allow(non_snake_case)]
-    pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn theta(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
 
         if is_call {
-            let p1 = -S * exp((b - r) * T) * pdf(d1) * v / (2.0 * sqrt(T));
-            let p2 = (b - r) * S * exp((b - r) * T) * cdf(d1);
-            let p3 = r * K * exp(-r * T) * cdf(d2);
+            let p1 = -S * exp((b - r) * t) * pdf(d1) * v / (2.0 * sqrt(t));
+            let p2 = (b - r) * S * exp((b - r) * t) * cdf(d1);
+            let p3 = r * K * exp(-r * t) * cdf(d2);
 
             p1 - p2 - p3
         } else {
-            let p1 = -S * exp((b - r) * T) * pdf(d1) * v / (2.0 * sqrt(T));
-            let p2 = (b - r) * S * exp((b - r) * T) * cdf(-d1);
-            let p3 = r * K * exp(-r * T) * cdf(-d2);
+            let p1 = -S * exp((b - r) * t) * pdf(d1) * v / (2.0 * sqrt(t));
+            let p2 = (b - r) * S * exp((b - r) * t) * cdf(-d1);
+            let p3 = r * K * exp(-r * t) * cdf(-d2);
 
             p1 + p2 + p3
         }
@@ -125,9 +125,9 @@ impl GeneralizedBlackScholes {
     /// This value is typically reported by dividing by 100 (for a 1% change in
     /// volatility)
     #[allow(non_snake_case)]
-    pub fn vega(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        S * exp((b - r) * T) * pdf(d1) * sqrt(T)
+    pub fn vega(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        S * exp((b - r) * t) * pdf(d1) * sqrt(t)
     }
 
     /// The sensitivity of the option price to the risk free rate.
@@ -135,24 +135,24 @@ impl GeneralizedBlackScholes {
     /// Useful for all options except futures options which should use
     /// futures_rho.
     #[allow(non_snake_case)]
-    pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn rho(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
         if is_call {
-            T * K * exp(-r * T) * cdf(d2)
+            t * K * exp(-r * t) * cdf(d2)
         } else {
-            -T * K * exp(-r * T) * cdf(-d2)
+            -t * K * exp(-r * t) * cdf(-d2)
         }
     }
 
     /// Sensitivity to the cost of carry.
     #[allow(non_snake_case)]
-    pub fn carry(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+    pub fn carry(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
         if is_call {
-            T * S * exp((b - r) * T) * cdf(d1)
+            t * S * exp((b - r) * t) * cdf(d1)
         } else {
-            -T * S * exp((b - r) * T) * cdf(-d1)
+            -t * S * exp((b - r) * t) * cdf(-d1)
         }
     }
 
@@ -163,29 +163,29 @@ impl GeneralizedBlackScholes {
     ///
     /// Also known as lambda or omega.
     #[allow(non_snake_case)]
-    pub fn elasticity(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        return GeneralizedBlackScholes::delta(is_call, S, K, T, r, b, v) * S
-            / GeneralizedBlackScholes::price(is_call, S, K, T, r, b, v);
+    pub fn elasticity(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        return GeneralizedBlackScholes::delta(is_call, S, K, t, r, b, v) * S
+            / GeneralizedBlackScholes::price(is_call, S, K, t, r, b, v);
     }
 
     #[allow(non_snake_case)]
-    pub fn gammap(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        GeneralizedBlackScholes::gamma(S, K, T, r, b, v) * S / 100.0
+    pub fn gammap(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        GeneralizedBlackScholes::gamma(S, K, t, r, b, v) * S / 100.0
     }
 
     #[allow(non_snake_case)]
-    pub fn vegap(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        GeneralizedBlackScholes::vega(S, K, T, r, b, v) * v * 10.0
+    pub fn vegap(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        GeneralizedBlackScholes::vega(S, K, t, r, b, v) * v * 10.0
     }
 
     #[allow(non_snake_case)]
-    pub fn forward_delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+    pub fn forward_delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
 
         if is_call {
-            exp(-r * T) * cdf(d1)
+            exp(-r * t) * cdf(d1)
         } else {
-            exp(-r * T) * (cdf(d1) - 1.0)
+            exp(-r * t) * (cdf(d1) - 1.0)
         }
     }
 
@@ -194,18 +194,18 @@ impl GeneralizedBlackScholes {
     ///
     /// Also known as DdeltaDvol.
     #[allow(non_snake_case)]
-    pub fn vanna(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        -exp((b - r) * T) * d2 / v * pdf(d1)
+    pub fn vanna(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        -exp((b - r) * t) * d2 / v * pdf(d1)
     }
 
     /// Also known as DVannaDvol
     #[allow(non_snake_case)]
-    pub fn ddelta_dvol_dvol(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        GeneralizedBlackScholes::vanna(S, K, T, r, b, v) / v * (d1 * d2 - d1 / d2 - 1.0)
+    pub fn ddelta_dvol_dvol(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        GeneralizedBlackScholes::vanna(S, K, t, r, b, v) / v * (d1 * d2 - d1 / d2 - 1.0)
     }
 
     /// Measures the instantaneous rate of change of delta over the passage of
@@ -213,15 +213,15 @@ impl GeneralizedBlackScholes {
     ///
     /// Also known as DdeltaDtime.
     #[allow(non_snake_case)]
-    pub fn charm(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn charm(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
 
         if is_call {
-            -exp((b - r) * T) * (pdf(d1) * (b / (v * sqrt(T)) - d2 / (2.0 * T)) + (b - r) * cdf(d1))
+            -exp((b - r) * t) * (pdf(d1) * (b / (v * sqrt(t)) - d2 / (2.0 * t)) + (b - r) * cdf(d1))
         } else {
-            return -exp((b - r) * T)
-                * (pdf(d1) * (b / (v * sqrt(T)) - d2 / (2.0 * T)) - (b - r) * cdf(-d1));
+            return -exp((b - r) * t)
+                * (pdf(d1) * (b / (v * sqrt(t)) - d2 / (2.0 * t)) - (b - r) * cdf(-d1));
         }
     }
 
@@ -232,143 +232,143 @@ impl GeneralizedBlackScholes {
 
     /// Also known as Speed
     #[allow(non_snake_case)]
-    pub fn dgamma_dspot(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        -GeneralizedBlackScholes::gamma(S, K, T, r, b, v) * (1.0 + d1 / (v * sqrt(T))) / S
+    pub fn dgamma_dspot(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        -GeneralizedBlackScholes::gamma(S, K, t, r, b, v) * (1.0 + d1 / (v * sqrt(t))) / S
     }
 
     /// Also known as zomma.
     #[allow(non_snake_case)]
-    pub fn dgamma_dvol(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        GeneralizedBlackScholes::gamma(S, K, T, r, b, v) * ((d1 * d2 - 1.0) / v)
+    pub fn dgamma_dvol(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        GeneralizedBlackScholes::gamma(S, K, t, r, b, v) * ((d1 * d2 - 1.0) / v)
     }
 
     #[allow(non_snake_case)]
-    pub fn dgamma_dtime(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        GeneralizedBlackScholes::gamma(S, K, T, r, b, v)
-            * (r - b + b * d1 / (v * sqrt(T)) + (1.0 - d1 * d2) / (2.0 * T))
+    pub fn dgamma_dtime(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        GeneralizedBlackScholes::gamma(S, K, t, r, b, v)
+            * (r - b + b * d1 / (v * sqrt(t)) + (1.0 - d1 * d2) / (2.0 * t))
     }
 
     /// Also known as SpeedP.
     #[allow(non_snake_case)]
-    pub fn dgammap_dspot(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        return -GeneralizedBlackScholes::gamma(S, K, T, r, b, v) * (d1) / (100.0 * v * sqrt(T));
+    pub fn dgammap_dspot(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        return -GeneralizedBlackScholes::gamma(S, K, t, r, b, v) * (d1) / (100.0 * v * sqrt(t));
     }
 
     #[allow(non_snake_case)]
-    pub fn dgammap_dvol(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        S / 100.0 * GeneralizedBlackScholes::gamma(S, K, T, r, b, v) * ((d1 * d2 - 1.0) / v)
+    pub fn dgammap_dvol(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        S / 100.0 * GeneralizedBlackScholes::gamma(S, K, t, r, b, v) * ((d1 * d2 - 1.0) / v)
     }
 
     #[allow(non_snake_case)]
-    pub fn dgammap_dtime(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn dgammap_dtime(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
 
-        GeneralizedBlackScholes::gammap(S, K, T, r, b, v)
-            * (r - b + b * d1 / (v * sqrt(T)) + (1.0 - d1 * d2) / (2.0 * T))
+        GeneralizedBlackScholes::gammap(S, K, t, r, b, v)
+            * (r - b + b * d1 / (v * sqrt(t)) + (1.0 - d1 * d2) / (2.0 * t))
     }
 
     #[allow(non_snake_case)]
-    pub fn dvega_dtime(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        GeneralizedBlackScholes::vega(S, K, T, r, b, v)
-            * (r - b + b * d1 / (v * sqrt(T)) - (1.0 + d1 * d2) / (2.0 * T))
+    pub fn dvega_dtime(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        GeneralizedBlackScholes::vega(S, K, t, r, b, v)
+            * (r - b + b * d1 / (v * sqrt(t)) - (1.0 + d1 * d2) / (2.0 * t))
     }
 
     /// Also known as DvegaDvol
     #[allow(non_snake_case)]
-    pub fn vomma(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        GeneralizedBlackScholes::vega(S, K, T, r, b, v) * d1 * d2 / v
+    pub fn vomma(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        GeneralizedBlackScholes::vega(S, K, t, r, b, v) * d1 * d2 / v
     }
 
     #[allow(non_snake_case)]
-    pub fn dvomma_dvol(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        GeneralizedBlackScholes::vomma(S, K, T, r, b, v) * 1.0 / v
+    pub fn dvomma_dvol(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        GeneralizedBlackScholes::vomma(S, K, t, r, b, v) * 1.0 / v
             * (d1 * d2 - d1 / d2 - d2 / d1 - 1.0)
     }
 
     /// Also known as VommaP.
     #[allow(non_snake_case)]
-    pub fn dvegap_dvol(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        return GeneralizedBlackScholes::vegap(S, K, T, r, b, v) * d1 * d2 / v;
+    pub fn dvegap_dvol(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        return GeneralizedBlackScholes::vegap(S, K, t, r, b, v) * d1 * d2 / v;
     }
 
     #[allow(non_snake_case)]
-    pub fn vega_leverage(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        GeneralizedBlackScholes::vega(S, K, T, r, b, v) * v
-            / GeneralizedBlackScholes::price(is_call, S, K, T, r, b, v)
+    pub fn vega_leverage(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        GeneralizedBlackScholes::vega(S, K, t, r, b, v) * v
+            / GeneralizedBlackScholes::price(is_call, S, K, t, r, b, v)
     }
 
     #[allow(non_snake_case)]
-    pub fn variance_vega(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        S * exp((b - r) * T) * pdf(d1) * sqrt(T) / (2.0 * v)
+    pub fn variance_vega(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        S * exp((b - r) * t) * pdf(d1) * sqrt(t) / (2.0 * v)
     }
 
     #[allow(non_snake_case)]
-    pub fn variance_delta(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        S * exp((b - r) * T) * pdf(d1) * (-d2) / (2.0 * (v * v))
+    pub fn variance_delta(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        S * exp((b - r) * t) * pdf(d1) * (-d2) / (2.0 * (v * v))
     }
 
     #[allow(non_snake_case)]
-    pub fn variance_vomma(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        S * exp((b - r) * T) * sqrt(T) / (4.0 * (v * v * v)) * pdf(d1) * (d1 * d2 - 1.0)
+    pub fn variance_vomma(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        S * exp((b - r) * t) * sqrt(t) / (4.0 * (v * v * v)) * pdf(d1) * (d1 * d2 - 1.0)
     }
 
     #[allow(non_snake_case)]
-    pub fn variance_ultima(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        S * exp((b - r) * T) * sqrt(T) / (8.0 * (v * v * v * v * v))
+    pub fn variance_ultima(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        S * exp((b - r) * t) * sqrt(t) / (8.0 * (v * v * v * v * v))
             * pdf(d1)
             * ((d1 * d2 - 1.0) * (d1 * d2 - 3.0) - ((d1 * d1) + (d2 * d2)))
     }
 
     #[allow(non_snake_case)]
-    pub fn theta_driftless(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        -S * exp((b - r) * T) * pdf(d1) * v / (2.0 * sqrt(T))
+    pub fn theta_driftless(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        -S * exp((b - r) * t) * pdf(d1) * v / (2.0 * sqrt(t))
     }
 
     #[allow(non_snake_case)]
-    pub fn futures_rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        -T * GeneralizedBlackScholes::price(is_call, S, K, T, r, 0.0, v)
+    pub fn futures_rho(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        -t * GeneralizedBlackScholes::price(is_call, S, K, t, r, 0.0, v)
     }
 
     /// Also known as rho2.
     #[allow(non_snake_case)]
-    pub fn phi(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+    pub fn phi(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
         if is_call {
-            -T * S * exp((b - r) * T) * cdf(d1)
+            -t * S * exp((b - r) * t) * cdf(d1)
         } else {
-            T * S * exp((b - r) * T) * cdf(-d1)
+            t * S * exp((b - r) * t) * cdf(-d1)
         }
     }
 
     #[allow(non_snake_case)]
-    pub fn dzeta_dvol(is_call: bool, S: f64, K: f64, T: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn dzeta_dvol(is_call: bool, S: f64, K: f64, t: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
         if is_call {
             -pdf(d2) * d1 / v
         } else {
@@ -377,13 +377,13 @@ impl GeneralizedBlackScholes {
     }
 
     #[allow(non_snake_case)]
-    pub fn dzeta_dtime(is_call: bool, S: f64, K: f64, T: f64, b: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn dzeta_dtime(is_call: bool, S: f64, K: f64, t: f64, b: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
         if is_call {
-            return pdf(d2) * (b / (v * sqrt(T)) - d1 / (2.0 * T));
+            return pdf(d2) * (b / (v * sqrt(t)) - d1 / (2.0 * t));
         } else {
-            return -pdf(d2) * (b / (v * sqrt(T)) - d1 / (2.0 * T));
+            return -pdf(d2) * (b / (v * sqrt(t)) - d1 / (2.0 * t));
         }
     }
 
@@ -393,88 +393,88 @@ impl GeneralizedBlackScholes {
         is_call: bool,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
     ) -> f64 {
         if is_call {
-            let K = K + GeneralizedBlackScholes::price(true, S, K, T, r, b, v) * exp(r * T);
-            let d2 = (log(S / K) + (b - (v * v) / 2.0) * T) / (v * sqrt(T));
+            let K = K + GeneralizedBlackScholes::price(true, S, K, t, r, b, v) * exp(r * t);
+            let d2 = (log(S / K) + (b - (v * v) / 2.0) * t) / (v * sqrt(t));
             return cdf(d2);
         } else {
-            let K = K - GeneralizedBlackScholes::price(false, S, K, T, r, b, v) * exp(r * T);
-            let d2 = (log(S / K) + (b - (v * v) / 2.0) * T) / (v * sqrt(T));
+            let K = K - GeneralizedBlackScholes::price(false, S, K, t, r, b, v) * exp(r * t);
+            let d2 = (log(S / K) + (b - (v * v) / 2.0) * t) / (v * sqrt(t));
             return cdf(-d2);
         }
     }
 
     #[allow(non_snake_case)]
-    pub fn strike_delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d2 = (log(S / K) + (b - (v * v) / 2.0) * T) / (v * sqrt(T));
+    pub fn strike_delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d2 = (log(S / K) + (b - (v * v) / 2.0) * t) / (v * sqrt(t));
         if is_call {
-            -exp(-r * T) * cdf(d2)
+            -exp(-r * t) * cdf(d2)
         } else {
-            exp(-r * T) * cdf(-d2)
+            exp(-r * t) * cdf(-d2)
         }
     }
 
     #[allow(non_snake_case)]
-    pub fn risk_neutral_density(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let d2 = (log(S / K) + (b - (v * v) / 2.0) * T) / (v * sqrt(T));
-        exp(-r * T) * pdf(d2) / (K * v * sqrt(T))
+    pub fn risk_neutral_density(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let d2 = (log(S / K) + (b - (v * v) / 2.0) * t) / (v * sqrt(t));
+        exp(-r * t) * pdf(d2) / (K * v * sqrt(t))
     }
 
     #[allow(non_snake_case)]
-    pub fn gamma_from_delta(S: f64, T: f64, r: f64, b: f64, v: f64, delta_: f64) -> f64 {
-        exp((b - r) * T) * pdf(inv_cdf(exp((r - b) * T) * fabs(delta_))) / (S * v * sqrt(T))
+    pub fn gamma_from_delta(S: f64, t: f64, r: f64, b: f64, v: f64, delta_: f64) -> f64 {
+        exp((b - r) * t) * pdf(inv_cdf(exp((r - b) * t) * fabs(delta_))) / (S * v * sqrt(t))
     }
 
     #[allow(non_snake_case)]
-    pub fn gammap_from_delta(S: f64, T: f64, r: f64, b: f64, v: f64, delta_: f64) -> f64 {
-        S / 100.0 * GeneralizedBlackScholes::gamma_from_delta(S, T, r, b, v, delta_)
+    pub fn gammap_from_delta(S: f64, t: f64, r: f64, b: f64, v: f64, delta_: f64) -> f64 {
+        S / 100.0 * GeneralizedBlackScholes::gamma_from_delta(S, t, r, b, v, delta_)
     }
 
     #[allow(non_snake_case)]
-    pub fn vega_from_delta(S: f64, T: f64, r: f64, b: f64, delta_: f64) -> f64 {
-        S * exp((b - r) * T) * sqrt(T) * pdf(inv_cdf(exp((r - b) * T) * fabs(delta_)))
+    pub fn vega_from_delta(S: f64, t: f64, r: f64, b: f64, delta_: f64) -> f64 {
+        S * exp((b - r) * t) * sqrt(t) * pdf(inv_cdf(exp((r - b) * t) * fabs(delta_)))
     }
 
     #[allow(non_snake_case)]
-    pub fn vegap_from_delta(S: f64, T: f64, r: f64, b: f64, v: f64, delta_: f64) -> f64 {
-        v / 10.0 * GeneralizedBlackScholes::vega_from_delta(S, T, r, b, delta_)
+    pub fn vegap_from_delta(S: f64, t: f64, r: f64, b: f64, v: f64, delta_: f64) -> f64 {
+        v / 10.0 * GeneralizedBlackScholes::vega_from_delta(S, t, r, b, delta_)
     }
 
     #[allow(non_snake_case)]
     pub fn strike_from_delta(
         is_call: bool,
         S: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         delta_: f64,
     ) -> f64 {
         if is_call {
-            S * exp(-inv_cdf(delta_ * exp((r - b) * T)) * v * sqrt(T) + (b + v * v / 2.0) * T)
+            S * exp(-inv_cdf(delta_ * exp((r - b) * t)) * v * sqrt(t) + (b + v * v / 2.0) * t)
         } else {
-            S * exp(inv_cdf(-delta_ * exp((r - b) * T)) * v * sqrt(T) + (b + v * v / 2.0) * T)
+            S * exp(inv_cdf(-delta_ * exp((r - b) * t)) * v * sqrt(t) + (b + v * v / 2.0) * t)
         }
     }
 
     #[allow(non_snake_case)]
     pub fn in_the_money_prob_from_delta(
         is_call: bool,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         delta_: f64,
     ) -> f64 {
         if is_call {
-            cdf(inv_cdf(delta_ / exp((b - r) * T)) - v * sqrt(T))
+            cdf(inv_cdf(delta_ / exp((b - r) * t)) - v * sqrt(t))
         } else {
-            cdf(inv_cdf(-delta_ / exp((b - r) * T)) + v * sqrt(T))
+            cdf(inv_cdf(-delta_ / exp((b - r) * t)) + v * sqrt(t))
         }
     }
 
@@ -483,41 +483,41 @@ impl GeneralizedBlackScholes {
         is_call: bool,
         S: f64,
         v: f64,
-        T: f64,
+        t: f64,
         b: f64,
         in_the_money_prob: f64,
     ) -> f64 {
         if is_call {
-            return S * exp(-inv_cdf(in_the_money_prob) * v * sqrt(T) + (b - (v * v) / 2.0) * T);
+            return S * exp(-inv_cdf(in_the_money_prob) * v * sqrt(t) + (b - (v * v) / 2.0) * t);
         } else {
-            return S * exp(inv_cdf(in_the_money_prob) * v * sqrt(T) + (b - (v * v) / 2.0) * T);
+            return S * exp(inv_cdf(in_the_money_prob) * v * sqrt(t) + (b - (v * v) / 2.0) * t);
         }
     }
 
     #[allow(non_snake_case)]
     pub fn rnd_from_in_the_money_prob(
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         v: f64,
         in_the_money_prob: f64,
     ) -> f64 {
-        exp(-r * T) * pdf(inv_cdf(in_the_money_prob)) / (K * v * sqrt(T))
+        exp(-r * t) * pdf(inv_cdf(in_the_money_prob)) / (K * v * sqrt(t))
     }
 
     #[allow(non_snake_case)]
     pub fn delta_from_in_the_money_prob(
         is_call: bool,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         in_the_money_prob: f64,
     ) -> f64 {
         if is_call {
-            return cdf(inv_cdf(in_the_money_prob * exp((b - r) * T)) - v * sqrt(T));
+            return cdf(inv_cdf(in_the_money_prob * exp((b - r) * t)) - v * sqrt(t));
         } else {
-            return -cdf(inv_cdf(in_the_money_prob * exp((b - r) * T)) + v * sqrt(T));
+            return -cdf(inv_cdf(in_the_money_prob * exp((b - r) * t)) + v * sqrt(t));
         }
     }
 
@@ -526,11 +526,11 @@ impl GeneralizedBlackScholes {
     /// is_lower == True gives lower asset level that gives max DdeltaDvol
     /// is_lower == False gives upper asset level that gives max DdeltaDvol
     #[allow(non_snake_case)]
-    pub fn max_ddelta_dvol_asset(is_lower: bool, K: f64, T: f64, b: f64, v: f64) -> f64 {
+    pub fn max_ddelta_dvol_asset(is_lower: bool, K: f64, t: f64, b: f64, v: f64) -> f64 {
         if is_lower {
-            return K * exp(-b * T - v * sqrt(T) * sqrt(4.0 + T * (v * v)) / 2.0);
+            return K * exp(-b * t - v * sqrt(t) * sqrt(4.0 + t * (v * v)) / 2.0);
         } else {
-            return K * exp(-b * T + v * sqrt(T) * sqrt(4.0 + T * (v * v)) / 2.0);
+            return K * exp(-b * t + v * sqrt(t) * sqrt(4.0 + t * (v * v)) / 2.0);
         }
     }
 
@@ -539,52 +539,52 @@ impl GeneralizedBlackScholes {
     /// is_lower == True gives lower strike level that gives max DdeltaDvol
     /// is_lower == False gives upper strike level that gives max DdeltaDvol
     #[allow(non_snake_case)]
-    pub fn max_ddelta_dvol_strike(is_lower: bool, S: f64, T: f64, b: f64, v: f64) -> f64 {
+    pub fn max_ddelta_dvol_strike(is_lower: bool, S: f64, t: f64, b: f64, v: f64) -> f64 {
         if is_lower {
-            S * exp(b * T - v * sqrt(T) * sqrt(4.0 + T * (v * v)) / 2.0)
+            S * exp(b * t - v * sqrt(t) * sqrt(4.0 + t * (v * v)) / 2.0)
         } else {
-            S * exp(b * T + v * sqrt(T) * sqrt(4.0 + T * (v * v)) / 2.0)
+            S * exp(b * t + v * sqrt(t) * sqrt(4.0 + t * (v * v)) / 2.0)
         }
     }
 
     /// What strike price that gives maximum gamma and vega
     #[allow(non_snake_case)]
-    pub fn max_gamma_vega_at_X(S: f64, b: f64, T: f64, v: f64) -> f64 {
-        S * exp((b + (v * v) / 2.0) * T)
+    pub fn max_gamma_vega_at_X(S: f64, b: f64, t: f64, v: f64) -> f64 {
+        S * exp((b + (v * v) / 2.0) * t)
     }
 
     /// What asset price that gives maximum gamma
     #[allow(non_snake_case)]
-    pub fn max_gamma_at_S(x: f64, b: f64, T: f64, v: f64) -> f64 {
-        x * exp((-b - 3.0 * (v * v) / 2.0) * T)
+    pub fn max_gamma_at_S(x: f64, b: f64, t: f64, v: f64) -> f64 {
+        x * exp((-b - 3.0 * (v * v) / 2.0) * t)
     }
 
     /// What asset price that gives maximum vega
     #[allow(non_snake_case)]
-    pub fn max_vega_at_S(K: f64, b: f64, T: f64, v: f64) -> f64 {
-        K * exp((-b + (v * v) / 2.0) * T)
+    pub fn max_vega_at_S(K: f64, b: f64, t: f64, v: f64) -> f64 {
+        K * exp((-b + (v * v) / 2.0) * t)
     }
 
     #[allow(non_snake_case)]
-    pub fn in_the_money_probability(is_call: bool, S: f64, K: f64, T: f64, b: f64, v: f64) -> f64 {
-        let d2 = (log(S / K) + (b - (v * v) / 2.0) * T) / (v * sqrt(T));
+    pub fn in_the_money_probability(is_call: bool, S: f64, K: f64, t: f64, b: f64, v: f64) -> f64 {
+        let d2 = (log(S / K) + (b - (v * v) / 2.0) * t) / (v * sqrt(t));
 
         if is_call { cdf(d2) } else { cdf(-d2) }
     }
 
     #[allow(non_snake_case)]
-    pub fn delta_mirror_strike(S: f64, T: f64, b: f64, v: f64) -> f64 {
-        return S * exp((b + (v * v) / 2.0) * T);
+    pub fn delta_mirror_strike(S: f64, t: f64, b: f64, v: f64) -> f64 {
+        return S * exp((b + (v * v) / 2.0) * t);
     }
 
     #[allow(non_snake_case)]
-    pub fn probability_mirror_strike(S: f64, T: f64, b: f64, v: f64) -> f64 {
-        S * exp((b - (v * v) / 2.0) * T)
+    pub fn probability_mirror_strike(S: f64, t: f64, b: f64, v: f64) -> f64 {
+        S * exp((b - (v * v) / 2.0) * t)
     }
 
     #[allow(non_snake_case)]
-    pub fn delta_mirror_call_put_strike(S: f64, K: f64, T: f64, b: f64, v: f64) -> f64 {
-        (S * S) / K * exp((2.0 * b + (v * v)) * T)
+    pub fn delta_mirror_call_put_strike(S: f64, K: f64, t: f64, b: f64, v: f64) -> f64 {
+        (S * S) / K * exp((2.0 * b + (v * v)) * t)
     }
 
     #[allow(non_snake_case)]
@@ -593,19 +593,19 @@ impl GeneralizedBlackScholes {
         is_call: bool,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         n_hedges: i32,
     ) -> f64 {
         if is_cash {
-            sqrt(PI / 4.0) * GeneralizedBlackScholes::vega(S, K, T, r, b, v) * v
+            sqrt(PI / 4.0) * GeneralizedBlackScholes::vega(S, K, t, r, b, v) * v
                 / sqrt(n_hedges.into())
         } else {
-            sqrt(PI / 4.0) * GeneralizedBlackScholes::vega(S, K, T, r, b, v) * v
+            sqrt(PI / 4.0) * GeneralizedBlackScholes::vega(S, K, t, r, b, v) * v
                 / sqrt(n_hedges.into())
-                / GeneralizedBlackScholes::price(is_call, S, K, T, r, b, v)
+                / GeneralizedBlackScholes::price(is_call, S, K, t, r, b, v)
         }
     }
 }
@@ -629,7 +629,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -692,7 +692,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let actual = GeneralizedBlackScholes::price(is_call, S, K, T, r, b, v);
+            let actual = GeneralizedBlackScholes::price(is_call, S, K, t, r, b, v);
             assert!(is_close_to(actual, expected, f64::EPSILON));
         }
     }
@@ -700,7 +700,7 @@ mod tests {
     #[test]
     fn it_should_calc_ivol() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, p, expected) in [
+        for (is_call, S, K, r, q, t, p, expected) in [
             (
                 true,
                 110.0,
@@ -764,7 +764,7 @@ mod tests {
         ] {
             let b = r - q;
             let actual =
-                GeneralizedBlackScholes::ivol(is_call, S, K, T, r, b, p, 100, f64::EPSILON / 2.0);
+                GeneralizedBlackScholes::ivol(is_call, S, K, t, r, b, p, 100, f64::EPSILON / 2.0);
             assert!(is_close_to(actual, expected, 1e-12));
         }
     }
@@ -777,7 +777,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -846,17 +846,17 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::delta(is_call, S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::delta(is_call, S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].delta(S, K, T, r, b, v, 1e-4, DifferenceMethod::Central);
+            let numeric = ng[&is_call].delta(S, K, t, r, b, v, 1e-4, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v,
@@ -874,7 +874,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -943,17 +943,17 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::gamma(S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::gamma(S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v,
@@ -971,7 +971,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1040,13 +1040,13 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::theta(is_call, S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::theta(is_call, S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].theta(
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v,
@@ -1059,7 +1059,7 @@ mod tests {
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v,
@@ -1077,7 +1077,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1146,17 +1146,17 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::vega(S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::vega(S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].vega(S, K, T, r, b, v, 1e-5, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vega(S, K, t, r, b, v, 1e-5, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v,
@@ -1174,7 +1174,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1243,17 +1243,17 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::rho(is_call, S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::rho(is_call, S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].rho(S, K, T, r, b, v, 1e-6, DifferenceMethod::Central);
+            let numeric = ng[&is_call].rho(S, K, t, r, b, v, 1e-6, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].rho({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v,
@@ -1271,7 +1271,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -1334,11 +1334,11 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::elasticity(is_call, S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::elasticity(is_call, S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric =
-                ng[&is_call].elasticity(S, K, T, r, b, v, 1e-4, DifferenceMethod::Central);
+                ng[&is_call].elasticity(S, K, t, r, b, v, 1e-4, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -1351,7 +1351,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -1414,11 +1414,11 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::dgamma_dvol(S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::dgamma_dvol(S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric =
-                ng[&is_call].dgamma_dvol(S, K, T, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
+                ng[&is_call].dgamma_dvol(S, K, t, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -1431,7 +1431,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -1494,10 +1494,10 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::gammap(S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::gammap(S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].gammap(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].gammap(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-5));
         }
     }
@@ -1510,7 +1510,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -1573,11 +1573,11 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::vanna(S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::vanna(S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric =
-                ng[&is_call].vanna(S, K, T, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
+                ng[&is_call].vanna(S, K, t, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -1590,7 +1590,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -1653,13 +1653,13 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::charm(is_call, S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::charm(is_call, S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric = ng[&is_call].charm(
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v,
@@ -1679,7 +1679,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -1742,10 +1742,10 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::vegap(S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::vegap(S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vegap(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vegap(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-3));
         }
     }
@@ -1758,7 +1758,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -1821,10 +1821,10 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let analytic = GeneralizedBlackScholes::vomma(S, K, T, r, b, v);
+            let analytic = GeneralizedBlackScholes::vomma(S, K, t, r, b, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vomma(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vomma(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-2));
         }
     }

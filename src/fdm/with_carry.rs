@@ -6,7 +6,7 @@ use crate::fdm::DifferenceMethod;
 pub struct FdmWithCarry {
     /// A function to calculate the price of an option.
     ///
-    /// fn price(S: 64, K: f64, T, r: f64, b: f64, v: f64) -> f64
+    /// fn price(S: 64, K: f64, t, r: f64, b: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64>,
 }
 
@@ -25,26 +25,26 @@ impl FdmWithCarry {
     /// Backward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S}
+    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S, K, t, r, b, \sigma) - BS_{price}(S - \Delta S, K, t, r, b, \sigma)}{\Delta S}
     /// $$
     ///
     /// Central difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S + \Delta S, K, T, r, b, \sigma) - BS_{price}(S-\Delta S, K, T, r, b, \sigma)}{2 \Delta S}
+    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S + \Delta S, K, t, r, b, \sigma) - BS_{price}(S-\Delta S, K, t, r, b, \sigma)}{2 \Delta S}
     /// $$
     ///
     /// Forward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S+\Delta S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta S}
+    /// \frac{\partial V}{\partial S} = \frac{BS_{price}(S+\Delta S, K, t, r, b, \sigma) - BS_{price}(S, K, t, r, b, \sigma)}{\Delta S}
     /// $$
     ///
     /// ### Arguments
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike.
-    /// * T (f64): Time to expiry in years.
+    /// * t (f64): Time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
@@ -59,7 +59,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -68,14 +68,14 @@ impl FdmWithCarry {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                return ((self.price)(S, K, T, r, b, v) - (self.price)(S - dS, K, T, r, b, v)) / dS;
+                return ((self.price)(S, K, t, r, b, v) - (self.price)(S - dS, K, t, r, b, v)) / dS;
             }
             DifferenceMethod::Central => {
-                return ((self.price)(S + dS, K, T, r, b, v) - (self.price)(S - dS, K, T, r, b, v))
+                return ((self.price)(S + dS, K, t, r, b, v) - (self.price)(S - dS, K, t, r, b, v))
                     / (2.0 * dS);
             }
             DifferenceMethod::Forward => {
-                return ((self.price)(S + dS, K, T, r, b, v) - (self.price)(S, K, T, r, b, v)) / dS;
+                return ((self.price)(S + dS, K, t, r, b, v) - (self.price)(S, K, t, r, b, v)) / dS;
             }
         }
     }
@@ -87,26 +87,26 @@ impl FdmWithCarry {
     /// Backward difference method.
     ///
     /// $$
-    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S, K, T, r, b, \sigma) - 2 BS_{price}(S - \Delta S, K, T, r, b, \sigma) + BS_{price}(S - 2 \Delta S, K, T, r, b, \sigma)}{\Delta S^2}
+    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S, K, t, r, b, \sigma) - 2 BS_{price}(S - \Delta S, K, t, r, b, \sigma) + BS_{price}(S - 2 \Delta S, K, t, r, b, \sigma)}{\Delta S^2}
     /// $$
     ///
     /// Central difference method.
     ///
     /// $$
-    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S, K, T, r, b, \sigma) + BS_{price}(S - \Delta S, K, T, r, b, \sigma)}{\Delta S^2}
+    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + \Delta S, K, t, r, b, \sigma) - 2 BS_{price}(S, K, t, r, b, \sigma) + BS_{price}(S - \Delta S, K, t, r, b, \sigma)}{\Delta S^2}
     /// $$
     ///
     /// Forward difference method.
     ///
     /// $$
-    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + 2 \Delta S, K, T, r, b, \sigma) - 2 BS_{price}(S + \Delta S, K, T, r, b, \sigma) + BS_{price}(S, K, T, r, b, \sigma)}{\Delta S^2}
+    /// \frac{\partial^2 V}{\partial S^2} = \frac{BS_{price}(S + 2 \Delta S, K, t, r, b, \sigma) - 2 BS_{price}(S + \Delta S, K, t, r, b, \sigma) + BS_{price}(S, K, t, r, b, \sigma)}{\Delta S^2}
     /// $$
     ///
     /// ### Arguments
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike.
-    /// * T (f64): Time to expiry in years.
+    /// * t (f64): Time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
@@ -121,7 +121,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -130,19 +130,19 @@ impl FdmWithCarry {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, b, v) - 2.0 * (self.price)(S - dS, K, T, r, b, v)
-                    + (self.price)(S - 2.0 * dS, K, T, r, b, v))
+                ((self.price)(S, K, t, r, b, v) - 2.0 * (self.price)(S - dS, K, t, r, b, v)
+                    + (self.price)(S - 2.0 * dS, K, t, r, b, v))
                     / (dS * dS)
             }
             DifferenceMethod::Central => {
-                ((self.price)(S + dS, K, T, r, b, v) - 2.0 * (self.price)(S, K, T, r, b, v)
-                    + (self.price)(S - dS, K, T, r, b, v))
+                ((self.price)(S + dS, K, t, r, b, v) - 2.0 * (self.price)(S, K, t, r, b, v)
+                    + (self.price)(S - dS, K, t, r, b, v))
                     / (dS * dS)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S + 2.0 * dS, K, T, r, b, v)
-                    - 2.0 * (self.price)(S + dS, K, T, r, b, v)
-                    + (self.price)(S, K, T, r, b, v))
+                ((self.price)(S + 2.0 * dS, K, t, r, b, v)
+                    - 2.0 * (self.price)(S + dS, K, t, r, b, v)
+                    + (self.price)(S, K, t, r, b, v))
                     / (dS * dS)
             }
         }
@@ -155,26 +155,26 @@ impl FdmWithCarry {
     /// Backward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta T}
+    /// \frac{\partial V}{\partial t} = \frac{BS_{price}(S, K, t - \Delta t, r, b, \sigma) - BS_{price}(S, K, t, r, b, \sigma)}{\Delta t}
     /// $$
     ///
     /// Central difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T - \Delta T, r, b, \sigma) - BS_{price}(S, K, T + \Delta T, r, b, \sigma)}{2 \Delta T}
+    /// \frac{\partial V}{\partial t} = \frac{BS_{price}(S, K, t - \Delta t, r, b, \sigma) - BS_{price}(S, K, t + \Delta t, r, b, \sigma)}{2 \Delta t}
     /// $$
     ///
     /// Forward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial T} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T + \Delta T, r, b, \sigma)}{\Delta T}
+    /// \frac{\partial V}{\partial t} = \frac{BS_{price}(S, K, t, r, b, \sigma) - BS_{price}(S, K, t + \Delta t, r, b, \sigma)}{\Delta t}
     /// $$
     ///
     /// ### Arguments
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike.
-    /// * T (f64): Time to expiry in years.
+    /// * t (f64): Time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
@@ -189,7 +189,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -198,14 +198,14 @@ impl FdmWithCarry {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T - dT, r, b, v) - (self.price)(S, K, T, r, b, v)) / dT
+                ((self.price)(S, K, t - dT, r, b, v) - (self.price)(S, K, t, r, b, v)) / dT
             }
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T - dT, r, b, v) - (self.price)(S, K, T + dT, r, b, v))
+                ((self.price)(S, K, t - dT, r, b, v) - (self.price)(S, K, t + dT, r, b, v))
                     / (2.0 * dT)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T + dT, r, b, v)) / dT
+                ((self.price)(S, K, t, r, b, v) - (self.price)(S, K, t + dT, r, b, v)) / dT
             }
         }
     }
@@ -217,26 +217,26 @@ impl FdmWithCarry {
     /// Backward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{\Delta \sigma}
+    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, t, r, b, \sigma) - BS_{price}(S, K, t, r, b, \sigma - \Delta \sigma)}{\Delta \sigma}
     /// $$
     ///
     /// Central difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{2 \Delta \sigma}
+    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, t, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, t, r, b, \sigma - \Delta \sigma)}{2 \Delta \sigma}
     /// $$
     ///
     /// Forward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta \sigma}
+    /// \frac{\partial V}{\partial \sigma} = \frac{BS_{price}(S, K, t, r, b, \sigma + \Delta \sigma) - BS_{price}(S, K, t, r, b, \sigma)}{\Delta \sigma}
     /// $$
     ///
     /// ### Arguments
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike.
-    /// * T (f64): Time to expiry in years.
+    /// * t (f64): Time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
@@ -251,7 +251,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -260,14 +260,14 @@ impl FdmWithCarry {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b, v - dv)) / dv
+                ((self.price)(S, K, t, r, b, v) - (self.price)(S, K, t, r, b, v - dv)) / dv
             }
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T, r, b, v + dv) - (self.price)(S, K, T, r, b, v - dv))
+                ((self.price)(S, K, t, r, b, v + dv) - (self.price)(S, K, t, r, b, v - dv))
                     / (2.0 * dv)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r, b, v + dv) - (self.price)(S, K, T, r, b, v)) / dv
+                ((self.price)(S, K, t, r, b, v + dv) - (self.price)(S, K, t, r, b, v)) / dv
             }
         }
     }
@@ -279,26 +279,26 @@ impl FdmWithCarry {
     /// Backward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{\Delta r}
+    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, t, r, b, \sigma) - BS_{price}(S, K, t, r - \Delta r, b - \Delta r, \sigma)}{\Delta r}
     /// $$
     ///
     /// Central difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, T, r - \Delta r, b - \Delta r, \sigma)}{2 \Delta r}
+    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, t, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, t, r - \Delta r, b - \Delta r, \sigma)}{2 \Delta r}
     /// $$
     ///
     /// Forward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta r}
+    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, t, r + \Delta r, b + \Delta r, \sigma) - BS_{price}(S, K, t, r, b, \sigma)}{\Delta r}
     /// $$
     ///
     /// ### Arguments
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike.
-    /// * T (f64): Time to expiry in years.
+    /// * t (f64): Time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
@@ -313,7 +313,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -322,16 +322,16 @@ impl FdmWithCarry {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r + dr, b, v) - (self.price)(S, K, T, r - dr, b - dr, v))
+                ((self.price)(S, K, t, r + dr, b, v) - (self.price)(S, K, t, r - dr, b - dr, v))
                     / dr
             }
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T, r + dr, b + dr, v)
-                    - (self.price)(S, K, T, r - dr, b - dr, v))
+                ((self.price)(S, K, t, r + dr, b + dr, v)
+                    - (self.price)(S, K, t, r - dr, b - dr, v))
                     / (2.0 * dr)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r + dr, b + dr, v) - (self.price)(S, K, T, r - dr, b, v))
+                ((self.price)(S, K, t, r + dr, b + dr, v) - (self.price)(S, K, t, r - dr, b, v))
                     / dr
             }
         }
@@ -344,26 +344,26 @@ impl FdmWithCarry {
     /// Backward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, T, r, b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{\Delta b}
+    /// \frac{\partial V}{\partial r} = \frac{BS_{price}(S, K, t, r, b, \sigma) - BS_{price}(S, K, t, r, b - \Delta b, \sigma)}{\Delta b}
     /// $$
     ///
     /// Central difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, T, r, b + \Delta b, \sigma) - BS_{price}(S, K, T, r, b - \Delta b, \sigma)}{2 \Delta b}
+    /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, t, r, b + \Delta b, \sigma) - BS_{price}(S, K, t, r, b - \Delta b, \sigma)}{2 \Delta b}
     /// $$
     ///
     /// Forward difference method.
     ///
     /// $$
-    /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, T, r, b + \Delta b, \sigma) - BS_{price}(S, K, T, r, b, \sigma)}{\Delta b}
+    /// \frac{\partial V}{\partial b} = \frac{BS_{price}(S, K, t, r, b + \Delta b, \sigma) - BS_{price}(S, K, t, r, b, \sigma)}{\Delta b}
     /// $$
     ///
     /// ### Arguments
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike.
-    /// * T (f64): Time to expiry in years.
+    /// * t (f64): Time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
@@ -378,7 +378,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -387,14 +387,14 @@ impl FdmWithCarry {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, b, v) - (self.price)(S, K, T, r, b - db, v)) / db
+                ((self.price)(S, K, t, r, b, v) - (self.price)(S, K, t, r, b - db, v)) / db
             }
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T, r, b + db, v) - (self.price)(S, K, T, r, b - db, v))
+                ((self.price)(S, K, t, r, b + db, v) - (self.price)(S, K, t, r, b - db, v))
                     / (2.0 * db)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r, b + db, v) - (self.price)(S, K, T, r, b, v)) / db
+                ((self.price)(S, K, t, r, b + db, v) - (self.price)(S, K, t, r, b, v)) / db
             }
         }
     }
@@ -404,14 +404,14 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dS: f64,
         method: DifferenceMethod,
     ) -> f64 {
-        self.delta(S, K, T, r, b, v, dS, method) * S / (self.price)(S, K, T, r, b, v)
+        self.delta(S, K, t, r, b, v, dS, method) * S / (self.price)(S, K, t, r, b, v)
     }
 
     #[allow(non_snake_case)]
@@ -419,16 +419,16 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dS: f64, // = 0.01,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S + 2.0 * dS, K, T, r, b, v) - 3.0 * (self.price)(S + dS, K, T, r, b, v)
-            + 3.0 * (self.price)(S, K, T, r, b, v)
-            - (self.price)(S - dS, K, T, r, b, v))
+        ((self.price)(S + 2.0 * dS, K, t, r, b, v) - 3.0 * (self.price)(S + dS, K, t, r, b, v)
+            + 3.0 * (self.price)(S, K, t, r, b, v)
+            - (self.price)(S - dS, K, t, r, b, v))
             / (dS * dS * dS)
     }
 
@@ -437,14 +437,14 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dS: f64, // = 0.01
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S * (1.0 + dS), K, T, r, b, v) - (self.price)(S * (1.0 - dS), K, T, r, b, v))
+        ((self.price)(S * (1.0 + dS), K, t, r, b, v) - (self.price)(S * (1.0 - dS), K, t, r, b, v))
             * 2.0
             / S
     }
@@ -454,14 +454,14 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dS: f64, // = 0.01,
         method: DifferenceMethod,
     ) -> f64 {
-        self.gamma(S, K, T, r, b, v, dS, method) * S / 100.0
+        self.gamma(S, K, t, r, b, v, dS, method) * S / 100.0
     }
 
     #[allow(non_snake_case)]
@@ -469,14 +469,14 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dv: f64, // = 0.001,
         method: DifferenceMethod,
     ) -> f64 {
-        self.vega(S, K, T, r, b, v, dv, method) * v * 10.0
+        self.vega(S, K, t, r, b, v, dv, method) * v * 10.0
     }
 
     /// The second order derivative of the option price to a change in the asset
@@ -486,7 +486,7 @@ impl FdmWithCarry {
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike price.
-    /// * T (f64): The time to expiry in years.
+    /// * t (f64): The time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The asset volatility.
@@ -501,7 +501,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -510,10 +510,10 @@ impl FdmWithCarry {
         _method: DifferenceMethod,
     ) -> f64 {
         // Also known as DdeltaDvol
-        ((self.price)(S + dS, K, T, r, b, v + dv)
-            - (self.price)(S + dS, K, T, r, b, v - dv)
-            - (self.price)(S - dS, K, T, r, b, v + dv)
-            + (self.price)(S - dS, K, T, r, b, v - dv))
+        ((self.price)(S + dS, K, t, r, b, v + dv)
+            - (self.price)(S + dS, K, t, r, b, v - dv)
+            - (self.price)(S - dS, K, t, r, b, v + dv)
+            + (self.price)(S - dS, K, t, r, b, v - dv))
             / (4.0 * dS)
             / dv
     }
@@ -527,7 +527,7 @@ impl FdmWithCarry {
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike price.
-    /// * T (f64): The time to expiry in years.
+    /// * t (f64): The time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The asset volatility.
@@ -542,7 +542,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -551,10 +551,10 @@ impl FdmWithCarry {
         _method: DifferenceMethod,
     ) -> f64 {
         // Also known as DdeltaDtime
-        ((self.price)(S + dS, K, T + dT, r, b, v)
-            - (self.price)(S + dS, K, T - dT, r, b, v)
-            - (self.price)(S - dS, K, T + dT, r, b, v)
-            + (self.price)(S - dS, K, T - dT, r, b, v))
+        ((self.price)(S + dS, K, t + dT, r, b, v)
+            - (self.price)(S + dS, K, t - dT, r, b, v)
+            - (self.price)(S - dS, K, t + dT, r, b, v)
+            + (self.price)(S - dS, K, t - dT, r, b, v))
             / (4.0 * dS)
             / -dT
     }
@@ -564,7 +564,7 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
@@ -572,11 +572,11 @@ impl FdmWithCarry {
         dv: f64, // = 0.001
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S + dS, K, T, r, b, v + dv) - 2.0 * (self.price)(S, K, T, r, b, v + dv)
-            + (self.price)(S - dS, K, T, r, b, v + dv)
-            - (self.price)(S + dS, K, T, r, b, v - dv)
-            + 2.0 * (self.price)(S, K, T, r, b, v - dv)
-            - (self.price)(S - dS, K, T, r, b, v - dv))
+        ((self.price)(S + dS, K, t, r, b, v + dv) - 2.0 * (self.price)(S, K, t, r, b, v + dv)
+            + (self.price)(S - dS, K, t, r, b, v + dv)
+            - (self.price)(S + dS, K, t, r, b, v - dv)
+            + 2.0 * (self.price)(S, K, t, r, b, v - dv)
+            - (self.price)(S - dS, K, t, r, b, v - dv))
             / (2.0 * dv * (dS * dS))
     }
 
@@ -589,19 +589,19 @@ impl FdmWithCarry {
     /// Central difference method.
     ///
     /// $$
-    /// \frac{\partial^2 V}{\partial \sigma^2} = \frac{BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) - 2 BS_{price}(S, K, T, r, b, \sigma) + BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma)}{\Delta \sigma^2}
+    /// \frac{\partial^2 V}{\partial \sigma^2} = \frac{BS_{price}(S, K, t, r, b, \sigma + \Delta \sigma) - 2 BS_{price}(S, K, t, r, b, \sigma) + BS_{price}(S, K, t, r, b, \sigma - \Delta \sigma)}{\Delta \sigma^2}
     /// $$
     ///
     /// Forward difference method.
     ///
     /// $$
-    /// \frac{\partial^2 V}{\partial \sigma^2} = \frac{BS_{price}(S, K, T, r, b, \sigma + 2 \Delta \sigma) - 2 BS_{price}(S, K, T, r, b, \sigma + \Delta \sigma) + BS_{price}(S, K, T, r, b, \sigma)}{\Delta \sigma^2}
+    /// \frac{\partial^2 V}{\partial \sigma^2} = \frac{BS_{price}(S, K, t, r, b, \sigma + 2 \Delta \sigma) - 2 BS_{price}(S, K, t, r, b, \sigma + \Delta \sigma) + BS_{price}(S, K, t, r, b, \sigma)}{\Delta \sigma^2}
     /// $$
     ///
     /// Backward difference method.
     ///
     /// $$
-    /// \frac{\partial^2 V}{\partial \sigma^2} = \frac{BS_{price}(S, K, T, r, b, \sigma) - 2 BS_{price}(S, K, T, r, b, \sigma - \Delta \sigma) + BS_{price}(S, K, T, r, b, \sigma - 2 \Delta \sigma)}{\Delta \sigma^2}
+    /// \frac{\partial^2 V}{\partial \sigma^2} = \frac{BS_{price}(S, K, t, r, b, \sigma) - 2 BS_{price}(S, K, t, r, b, \sigma - \Delta \sigma) + BS_{price}(S, K, t, r, b, \sigma - 2 \Delta \sigma)}{\Delta \sigma^2}
     /// $$
     ///
     ///
@@ -609,7 +609,7 @@ impl FdmWithCarry {
     ///
     /// * S (f64): The asset price.
     /// * K (f64): The strike.
-    /// * T (f64): Time to expiry in years.
+    /// * t (f64): Time to expiry in years.
     /// * r (f64): The risk free rate.
     /// * b (f64): The cost of carry.
     /// * v (f64): The volatility.
@@ -624,15 +624,15 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dv: f64, // = 0.001,
         _method: DifferenceMethod,
     ) -> f64 {
-        return ((self.price)(S, K, T, r, b, v + dv) - 2.0 * (self.price)(S, K, T, r, b, v)
-            + (self.price)(S, K, T, r, b, v - dv))
+        return ((self.price)(S, K, t, r, b, v + dv) - 2.0 * (self.price)(S, K, t, r, b, v)
+            + (self.price)(S, K, t, r, b, v - dv))
             / (dv * dv);
     }
 
@@ -641,15 +641,15 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dT: f64, //  = 1 / 365,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K, T + dT, r, b, v) - 2.0 * (self.price)(S, K, T, r, b, v)
-            + (self.price)(S, K, T - dT, r, b, v))
+        ((self.price)(S, K, t + dT, r, b, v) - 2.0 * (self.price)(S, K, t, r, b, v)
+            + (self.price)(S, K, t - dT, r, b, v))
             / (dT * dT)
     }
 
@@ -658,14 +658,14 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dr: f64, // = 0.01,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K, T, r + dr, b, v) - (self.price)(S, K, T, r - dr, b, v)) / 2.0
+        ((self.price)(S, K, t, r + dr, b, v) - (self.price)(S, K, t, r - dr, b, v)) / 2.0
     }
 
     #[allow(non_snake_case)]
@@ -673,14 +673,14 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         db: f64, // = 0.01,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K, T, r, b - db, v) - (self.price)(S, K, T, r, b + db, v)) / 2.0
+        ((self.price)(S, K, t, r, b - db, v) - (self.price)(S, K, t, r, b + db, v)) / 2.0
     }
 
     #[allow(non_snake_case)]
@@ -688,13 +688,13 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dK: f64, // = 0.01,
     ) -> f64 {
-        ((self.price)(S, K + dK, T, r, b, v) - (self.price)(S, K - dK, T, r, b, v)) / (2.0 * dK)
+        ((self.price)(S, K + dK, t, r, b, v) - (self.price)(S, K - dK, t, r, b, v)) / (2.0 * dK)
     }
 
     #[allow(non_snake_case)]
@@ -702,14 +702,14 @@ impl FdmWithCarry {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         v: f64,
         dK: f64, // = 0.01,
     ) -> f64 {
-        ((self.price)(S, K + dK, T, r, b, v) - 2.0 * (self.price)(S, K, T, r, b, v)
-            + (self.price)(S, K - dK, T, r, b, v))
+        ((self.price)(S, K + dK, t, r, b, v) - 2.0 * (self.price)(S, K, t, r, b, v)
+            + (self.price)(S, K - dK, t, r, b, v))
             / (dK * dK)
     }
 }

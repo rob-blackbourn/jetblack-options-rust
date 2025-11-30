@@ -6,7 +6,7 @@ use crate::fdm::DifferenceMethod;
 pub struct FdmWithDividendYield {
     /// The pricing function.
     ///
-    /// fn price(S: 64, K: f64, T, r: f64, q: f64, v: f64) -> f64
+    /// fn price(S: 64, K: f64, t, r: f64, q: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64>,
 }
 
@@ -22,7 +22,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -31,14 +31,14 @@ impl FdmWithDividendYield {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, q, v) - (self.price)(S - dS, K, T, r, q, v)) / dS
+                ((self.price)(S, K, t, r, q, v) - (self.price)(S - dS, K, t, r, q, v)) / dS
             }
             DifferenceMethod::Central => {
-                ((self.price)(S + dS, K, T, r, q, v) - (self.price)(S - dS, K, T, r, q, v))
+                ((self.price)(S + dS, K, t, r, q, v) - (self.price)(S - dS, K, t, r, q, v))
                     / (2.0 * dS)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S + dS, K, T, r, q, v) - (self.price)(S, K, T, r, q, v)) / dS
+                ((self.price)(S + dS, K, t, r, q, v) - (self.price)(S, K, t, r, q, v)) / dS
             }
         }
     }
@@ -48,7 +48,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -57,19 +57,19 @@ impl FdmWithDividendYield {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, q, v) - 2.0 * (self.price)(S - dS, K, T, r, q, v)
-                    + (self.price)(S - 2.0 * dS, K, T, r, q, v))
+                ((self.price)(S, K, t, r, q, v) - 2.0 * (self.price)(S - dS, K, t, r, q, v)
+                    + (self.price)(S - 2.0 * dS, K, t, r, q, v))
                     / (dS * dS)
             }
             DifferenceMethod::Central => {
-                ((self.price)(S + dS, K, T, r, q, v) - 2.0 * (self.price)(S, K, T, r, q, v)
-                    + (self.price)(S - dS, K, T, r, q, v))
+                ((self.price)(S + dS, K, t, r, q, v) - 2.0 * (self.price)(S, K, t, r, q, v)
+                    + (self.price)(S - dS, K, t, r, q, v))
                     / (dS * dS)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S + 2.0 * dS, K, T, r, q, v)
-                    - 2.0 * (self.price)(S + dS, K, T, r, q, v)
-                    + (self.price)(S, K, T, r, q, v))
+                ((self.price)(S + 2.0 * dS, K, t, r, q, v)
+                    - 2.0 * (self.price)(S + dS, K, t, r, q, v)
+                    + (self.price)(S, K, t, r, q, v))
                     / (dS * dS)
             }
         }
@@ -80,7 +80,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -89,14 +89,14 @@ impl FdmWithDividendYield {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T - dT, r, q, v) - (self.price)(S, K, T, r, q, v)) / dT
+                ((self.price)(S, K, t - dT, r, q, v) - (self.price)(S, K, t, r, q, v)) / dT
             }
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T - dT, r, q, v) - (self.price)(S, K, T + dT, r, q, v))
+                ((self.price)(S, K, t - dT, r, q, v) - (self.price)(S, K, t + dT, r, q, v))
                     / (2.0 * dT)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r, q, v) - (self.price)(S, K, T + dT, r, q, v)) / dT
+                ((self.price)(S, K, t, r, q, v) - (self.price)(S, K, t + dT, r, q, v)) / dT
             }
         }
     }
@@ -106,7 +106,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -115,14 +115,14 @@ impl FdmWithDividendYield {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, q, v) - (self.price)(S, K, T, r, q, v - dv)) / dv
+                ((self.price)(S, K, t, r, q, v) - (self.price)(S, K, t, r, q, v - dv)) / dv
             }
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T, r, q, v + dv) - (self.price)(S, K, T, r, q, v - dv))
+                ((self.price)(S, K, t, r, q, v + dv) - (self.price)(S, K, t, r, q, v - dv))
                     / (2.0 * dv)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r, q, v + dv) - (self.price)(S, K, T, r, q, v)) / dv
+                ((self.price)(S, K, t, r, q, v + dv) - (self.price)(S, K, t, r, q, v)) / dv
             }
         }
     }
@@ -132,7 +132,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -141,14 +141,14 @@ impl FdmWithDividendYield {
     ) -> f64 {
         match method {
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T, r + dr, q, v) - (self.price)(S, K, T, r - dr, q, v))
+                ((self.price)(S, K, t, r + dr, q, v) - (self.price)(S, K, t, r - dr, q, v))
                     / (2.0 * dr)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r + dr, q, v) - (self.price)(S, K, T, r, q, v)) / dr
+                ((self.price)(S, K, t, r + dr, q, v) - (self.price)(S, K, t, r, q, v)) / dr
             }
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, q, v) - (self.price)(S, K, T, r - dr, q, v)) / dr
+                ((self.price)(S, K, t, r, q, v) - (self.price)(S, K, t, r - dr, q, v)) / dr
             }
         }
     }
@@ -158,7 +158,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -167,14 +167,14 @@ impl FdmWithDividendYield {
     ) -> f64 {
         match method {
             DifferenceMethod::Backward => {
-                ((self.price)(S, K, T, r, q, v) - (self.price)(S, K, T, r, q - dq, v)) / dq
+                ((self.price)(S, K, t, r, q, v) - (self.price)(S, K, t, r, q - dq, v)) / dq
             }
             DifferenceMethod::Central => {
-                ((self.price)(S, K, T, r, q + dq, v) - (self.price)(S, K, T, r, q - dq, v))
+                ((self.price)(S, K, t, r, q + dq, v) - (self.price)(S, K, t, r, q - dq, v))
                     / (2.0 * dq)
             }
             DifferenceMethod::Forward => {
-                ((self.price)(S, K, T, r, q + dq, v) - (self.price)(S, K, T, r, q, v)) / dq
+                ((self.price)(S, K, t, r, q + dq, v) - (self.price)(S, K, t, r, q, v)) / dq
             }
         }
     }
@@ -184,17 +184,17 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dS: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        return ((self.price)(S + dS, K, T, r, q, v) - (self.price)(S - dS, K, T, r, q, v))
+        return ((self.price)(S + dS, K, t, r, q, v) - (self.price)(S - dS, K, t, r, q, v))
             / (2.0 * dS)
             * S
-            / (self.price)(S, K, T, r, q, v);
+            / (self.price)(S, K, t, r, q, v);
     }
 
     #[allow(non_snake_case)]
@@ -202,17 +202,17 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dS: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        return ((self.price)(S + 2.0 * dS, K, T, r, q, v)
-            - 3.0 * (self.price)(S + dS, K, T, r, q, v)
-            + 3.0 * (self.price)(S, K, T, r, q, v)
-            - (self.price)(S - dS, K, T, r, q, v))
+        return ((self.price)(S + 2.0 * dS, K, t, r, q, v)
+            - 3.0 * (self.price)(S + dS, K, t, r, q, v)
+            + 3.0 * (self.price)(S, K, t, r, q, v)
+            - (self.price)(S - dS, K, t, r, q, v))
             / (dS * dS * dS);
     }
 
@@ -221,14 +221,14 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dS: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S * (1.0 + dS), K, T, r, q, v) - (self.price)(S * (1.0 - dS), K, T, r, q, v))
+        ((self.price)(S * (1.0 + dS), K, t, r, q, v) - (self.price)(S * (1.0 - dS), K, t, r, q, v))
             * 2.0
             / S
     }
@@ -238,7 +238,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -246,8 +246,8 @@ impl FdmWithDividendYield {
         _method: DifferenceMethod,
     ) -> f64 {
         S / 100.0
-            * ((self.price)(S + dS, K, T, r, q, v) - 2.0 * (self.price)(S, K, T, r, q, v)
-                + (self.price)(S - dS, K, T, r, q, v))
+            * ((self.price)(S + dS, K, t, r, q, v) - 2.0 * (self.price)(S, K, t, r, q, v)
+                + (self.price)(S - dS, K, t, r, q, v))
             / (dS * dS)
     }
 
@@ -256,14 +256,14 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dv: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K, T, r, q, v + dv) - (self.price)(S, K, T, r, q, v - dv)) * v / 0.1 / 2.0
+        ((self.price)(S, K, t, r, q, v + dv) - (self.price)(S, K, t, r, q, v - dv)) * v / 0.1 / 2.0
     }
 
     /// Also known as DdeltaDvol
@@ -272,7 +272,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -280,10 +280,10 @@ impl FdmWithDividendYield {
         dv: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S + dS, K, T, r, q, v + dv)
-            - (self.price)(S + dS, K, T, r, q, v - dv)
-            - (self.price)(S - dS, K, T, r, q, v + dv)
-            + (self.price)(S - dS, K, T, r, q, v - dv))
+        ((self.price)(S + dS, K, t, r, q, v + dv)
+            - (self.price)(S + dS, K, t, r, q, v - dv)
+            - (self.price)(S - dS, K, t, r, q, v + dv)
+            + (self.price)(S - dS, K, t, r, q, v - dv))
             / (4.0 * dS)
             / dv
     }
@@ -294,7 +294,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -302,10 +302,10 @@ impl FdmWithDividendYield {
         dT: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S + dS, K, T + dT, r, q, v)
-            - (self.price)(S + dS, K, T - dT, r, q, v)
-            - (self.price)(S - dS, K, T + dT, r, q, v)
-            + (self.price)(S - dS, K, T - dT, r, q, v))
+        ((self.price)(S + dS, K, t + dT, r, q, v)
+            - (self.price)(S + dS, K, t - dT, r, q, v)
+            - (self.price)(S - dS, K, t + dT, r, q, v)
+            + (self.price)(S - dS, K, t - dT, r, q, v))
             / (4.0 * dS)
             / -dT
     }
@@ -315,7 +315,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -323,11 +323,11 @@ impl FdmWithDividendYield {
         dv: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S + dS, K, T, r, q, v + dv) - 2.0 * (self.price)(S, K, T, r, q, v + dv)
-            + (self.price)(S - dS, K, T, r, q, v + dv)
-            - (self.price)(S + dS, K, T, r, q, v - dv)
-            + 2.0 * (self.price)(S, K, T, r, q, v - dv)
-            - (self.price)(S - dS, K, T, r, q, v - dv))
+        ((self.price)(S + dS, K, t, r, q, v + dv) - 2.0 * (self.price)(S, K, t, r, q, v + dv)
+            + (self.price)(S - dS, K, t, r, q, v + dv)
+            - (self.price)(S + dS, K, t, r, q, v - dv)
+            + 2.0 * (self.price)(S, K, t, r, q, v - dv)
+            - (self.price)(S - dS, K, t, r, q, v - dv))
             / (2.0 * dv * (dS * dS))
     }
 
@@ -336,7 +336,7 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
@@ -344,8 +344,8 @@ impl FdmWithDividendYield {
         _method: DifferenceMethod,
     ) -> f64 {
         // DvegaDvol
-        ((self.price)(S, K, T, r, q, v + dv) - 2.0 * (self.price)(S, K, T, r, q, v)
-            + (self.price)(S, K, T, r, q, v - dv))
+        ((self.price)(S, K, t, r, q, v + dv) - 2.0 * (self.price)(S, K, t, r, q, v)
+            + (self.price)(S, K, t, r, q, v - dv))
             / (dv * dv)
     }
 
@@ -354,15 +354,15 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dT: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        return ((self.price)(S, K, T + dT, r, q, v) - 2.0 * (self.price)(S, K, T, r, q, v)
-            + (self.price)(S, K, T - dT, r, q, v))
+        return ((self.price)(S, K, t + dT, r, q, v) - 2.0 * (self.price)(S, K, t, r, q, v)
+            + (self.price)(S, K, t - dT, r, q, v))
             / (dT * dT);
     }
 
@@ -371,14 +371,14 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dr: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K, T, r + dr, q, v) - (self.price)(S, K, T, r - dr, q, v)) / 2.0
+        ((self.price)(S, K, t, r + dr, q, v) - (self.price)(S, K, t, r - dr, q, v)) / 2.0
     }
 
     #[allow(non_snake_case)]
@@ -386,14 +386,14 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dq: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K, T, r, q - dq, v) - (self.price)(S, K, T, r, q + dq, v)) / 2.0
+        ((self.price)(S, K, t, r, q - dq, v) - (self.price)(S, K, t, r, q + dq, v)) / 2.0
     }
 
     #[allow(non_snake_case)]
@@ -401,14 +401,14 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dK: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K + dK, T, r, q, v) - (self.price)(S, K - dK, T, r, q, v)) / (2.0 * dK)
+        ((self.price)(S, K + dK, t, r, q, v) - (self.price)(S, K - dK, t, r, q, v)) / (2.0 * dK)
     }
 
     #[allow(non_snake_case)]
@@ -416,15 +416,15 @@ impl FdmWithDividendYield {
         &self,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         q: f64,
         v: f64,
         dK: f64,
         _method: DifferenceMethod,
     ) -> f64 {
-        ((self.price)(S, K + dK, T, r, q, v) - 2.0 * (self.price)(S, K, T, r, q, v)
-            + (self.price)(S, K - dK, T, r, q, v))
+        ((self.price)(S, K + dK, t, r, q, v) - 2.0 * (self.price)(S, K, t, r, q, v)
+            + (self.price)(S, K - dK, t, r, q, v))
             / (dK * dK)
     }
 }

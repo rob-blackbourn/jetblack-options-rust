@@ -5,7 +5,7 @@
 //! The following arguments are common.
 //!
 //! * K (f64): The strike.
-//! * T (f64): The time to expiry in years.
+//! * t (f64): The time to expiry in years.
 //! * r (f64): The risk free rate.
 //! * b (f64): The asset growth.
 //! * v (f64): The volatility.
@@ -33,51 +33,51 @@ pub struct BaroneAdesiWhaley {}
 impl BaroneAdesiWhaley {
     /// Newton Raphson algorithm to solve for the critical commodity price for a call.
     #[allow(non_snake_case)]
-    fn _kc(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn _kc(K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         // Calculate the seed value Si
         let n = 2.0 * b / (v * v);
         let m = 2.0 * r / (v * v);
         let q2u = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
         let su = K / (1.0 - 1.0 / q2u);
-        let h2 = -(b * T + 2.0 * v * sqrt(T)) * K / (su - K);
+        let h2 = -(b * t + 2.0 * v * sqrt(t)) * K / (su - K);
         let mut Si = K + (su - K) * (1.0 - exp(h2));
 
-        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
-        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * t)));
+        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
         let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
         let mut lhs = Si - K;
         let mut rhs =
-            BS::price(true, Si, K, T, r, b, v) + (1.0 - exp((b - r) * T) * cdf(d1)) * Si / q2;
-        let mut bi = exp((b - r) * T) * cdf(d1) * (1.0 - 1.0 / q2)
-            + (1.0 - exp((b - r) * T) * cdf(d1) / (v * sqrt(T))) / q2;
+            BS::price(true, Si, K, t, r, b, v) + (1.0 - exp((b - r) * t) * cdf(d1)) * Si / q2;
+        let mut bi = exp((b - r) * t) * cdf(d1) * (1.0 - 1.0 / q2)
+            + (1.0 - exp((b - r) * t) * cdf(d1) / (v * sqrt(t))) / q2;
         let epsilon = 0.000001;
         // Using the Newton Raphson algorithm solve for Si
         while fabs(lhs - rhs) / K > epsilon {
             Si = (K + rhs - bi * Si) / (1.0 - bi);
-            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
             lhs = Si - K;
-            rhs = BS::price(true, Si, K, T, r, b, v) + (1.0 - exp((b - r) * T) * cdf(d1)) * Si / q2;
-            bi = exp((b - r) * T) * cdf(d1) * (1.0 - 1.0 / q2)
-                + (1.0 - exp((b - r) * T) * pdf(d1) / (v * sqrt(T))) / q2;
+            rhs = BS::price(true, Si, K, t, r, b, v) + (1.0 - exp((b - r) * t) * cdf(d1)) * Si / q2;
+            bi = exp((b - r) * t) * cdf(d1) * (1.0 - 1.0 / q2)
+                + (1.0 - exp((b - r) * t) * pdf(d1) / (v * sqrt(t))) / q2;
         }
 
         Si
     }
 
     #[allow(non_snake_case)]
-    fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn _call_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         if b >= r {
-            return BS::price(true, S, K, T, r, b, v);
+            return BS::price(true, S, K, t, r, b, v);
         }
 
-        let Sk = BaroneAdesiWhaley::_kc(K, T, r, b, v);
+        let Sk = BaroneAdesiWhaley::_kc(K, t, r, b, v);
         let n = 2.0 * b / (v * v);
-        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
-        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * t)));
+        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
         let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-        let a2 = (Sk / q2) * (1.0 - exp((b - r) * T) * cdf(d1));
+        let a2 = (Sk / q2) * (1.0 - exp((b - r) * t) * cdf(d1));
         if S < Sk {
-            BS::price(true, S, K, T, r, b, v) + a2 * pow(S / Sk, q2)
+            BS::price(true, S, K, t, r, b, v) + a2 * pow(S / Sk, q2)
         } else {
             S - K
         }
@@ -85,49 +85,49 @@ impl BaroneAdesiWhaley {
 
     /// Newton Raphson algorithm to solve for the critical commodity price for a put.
     #[allow(non_snake_case)]
-    fn _kp(K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn _kp(K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         // Calculation of seed value, Si
         let n = 2.0 * b / (v * v);
         let m = 2.0 * r / (v * v);
         let q1u = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
         let su = K / (1.0 - 1.0 / q1u);
-        let h1 = (b * T - 2.0 * v * sqrt(T)) * K / (K - su);
+        let h1 = (b * t - 2.0 * v * sqrt(t)) * K / (K - su);
         let mut Si = su + (K - su) * exp(h1);
 
-        let k = 2.0 * r / (v * 2.0 * (1.0 - exp(-r * T)));
-        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let k = 2.0 * r / (v * 2.0 * (1.0 - exp(-r * t)));
+        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
         let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
         let mut lhs = K - Si;
         let mut rhs =
-            BS::price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
-        let mut bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
-            - (1.0 + exp((b - r) * T) * pdf(-d1) / (v * sqrt(T))) / q1;
+            BS::price(false, Si, K, t, r, b, v) - (1.0 - exp((b - r) * t) * cdf(-d1)) * Si / q1;
+        let mut bi = -exp((b - r) * t) * cdf(-d1) * (1.0 - 1.0 / q1)
+            - (1.0 + exp((b - r) * t) * pdf(-d1) / (v * sqrt(t))) / q1;
         let epsilon = 0.000001;
         // Using the Newton Raphson algorithm, solve for Si.
         while fabs(lhs - rhs) / K > epsilon {
             Si = (K - rhs + bi * Si) / (1.0 + bi);
-            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
             lhs = K - Si;
             rhs =
-                BS::price(false, Si, K, T, r, b, v) - (1.0 - exp((b - r) * T) * cdf(-d1)) * Si / q1;
-            bi = -exp((b - r) * T) * cdf(-d1) * (1.0 - 1.0 / q1)
-                - (1.0 + exp((b - r) * T) * cdf(-d1) / (v * sqrt(T))) / q1;
+                BS::price(false, Si, K, t, r, b, v) - (1.0 - exp((b - r) * t) * cdf(-d1)) * Si / q1;
+            bi = -exp((b - r) * t) * cdf(-d1) * (1.0 - 1.0 / q1)
+                - (1.0 + exp((b - r) * t) * cdf(-d1) / (v * sqrt(t))) / q1;
         }
 
         Si
     }
 
     #[allow(non_snake_case)]
-    fn _put_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
-        let Sk = BaroneAdesiWhaley::_kp(K, T, r, b, v);
+    fn _put_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let Sk = BaroneAdesiWhaley::_kp(K, t, r, b, v);
         let n = 2.0 * b / (v * v);
-        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * T)));
-        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * T) / (v * sqrt(T));
+        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * t)));
+        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
         let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-        let a1 = -(Sk / q1) * (1.0 - exp((b - r) * T) * cdf(-d1));
+        let a1 = -(Sk / q1) * (1.0 - exp((b - r) * t) * cdf(-d1));
 
         if S > Sk {
-            BS::price(false, S, K, T, r, b, v) + a1 * pow(S / Sk, q1)
+            BS::price(false, S, K, t, r, b, v) + a1 * pow(S / Sk, q1)
         } else {
             K - S
         }
@@ -135,11 +135,11 @@ impl BaroneAdesiWhaley {
 
     /// The Barone-Adesi and Whaley (1987) American approximation.
     #[allow(non_snake_case)]
-    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+    pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         if is_call {
-            BaroneAdesiWhaley::_call_price(S, K, T, r, b, v)
+            BaroneAdesiWhaley::_call_price(S, K, t, r, b, v)
         } else {
-            BaroneAdesiWhaley::_put_price(S, K, T, r, b, v)
+            BaroneAdesiWhaley::_put_price(S, K, t, r, b, v)
         }
     }
 
@@ -149,7 +149,7 @@ impl BaroneAdesiWhaley {
         is_call: bool,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         p: f64,
@@ -158,7 +158,7 @@ impl BaroneAdesiWhaley {
     ) -> f64 {
         solve_ivol(
             p,
-            |v| BaroneAdesiWhaley::price(is_call, S, K, T, r, b, v),
+            |v| BaroneAdesiWhaley::price(is_call, S, K, t, r, b, v),
             max_iterations,
             epsilon,
         )
@@ -167,8 +167,8 @@ impl BaroneAdesiWhaley {
     /// Return a struct to calculate greeks numerically using finite difference methods.
     pub fn fdm_greeks(is_call: bool) -> FdmWithCarry {
         #[allow(non_snake_case)]
-        FdmWithCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
-            BaroneAdesiWhaley::price(is_call, S, K, T, r, b, v)
+        FdmWithCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64, v: f64| {
+            BaroneAdesiWhaley::price(is_call, S, K, t, r, b, v)
         })
     }
 }
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -254,7 +254,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let actual = BaroneAdesiWhaley::price(is_call, S, K, T, r, b, v);
+            let actual = BaroneAdesiWhaley::price(is_call, S, K, t, r, b, v);
             assert!(is_close_to(actual, expected, 1e-12))
         }
     }
@@ -267,7 +267,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -330,7 +330,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].delta(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].delta(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, 1e-12));
         }
     }
@@ -343,7 +343,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -406,7 +406,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, 1e-9));
         }
     }
@@ -419,7 +419,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -483,7 +483,7 @@ mod tests {
         ] {
             let b = r - q;
             let numeric =
-                ng[&is_call].theta(S, K, T, r, b, v, 1.0 / 365.0, DifferenceMethod::Central);
+                ng[&is_call].theta(S, K, t, r, b, v, 1.0 / 365.0, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, 1e-11));
         }
     }
@@ -496,7 +496,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -559,7 +559,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].vega(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vega(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, 1e-11));
         }
     }
@@ -572,7 +572,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -635,7 +635,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].rho(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].rho(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, 1e-10));
         }
     }

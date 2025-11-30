@@ -3,25 +3,25 @@
 //! The value of a call option.
 //!
 //! $$
-//! c = S_0e^{-r_f T}\mathcal{N}(d_1) - Ke^{-r_d T}\mathcal{N}(d_2)
+//! c = S_0e^{-r_f t}\mathcal{N}(d_1) - Ke^{-r_d t}\mathcal{N}(d_2)
 //! $$
 //!
 //! The value of a put option.
 //!
 //! $$
-//! p = Ke^{-r_d T}\mathcal{N}(-d_2) - S_0e^{-r_f T}\mathcal{N}(-d_1)
+//! p = Ke^{-r_d t}\mathcal{N}(-d_2) - S_0e^{-r_f t}\mathcal{N}(-d_1)
 //! $$
 //!
 //! where:
 //!
 //! $$
-//! d_1 = \frac{\ln(S_0/K) + (r_d - r_f + \sigma^2/2)T}{\sigma\sqrt{T}}
+//! d_1 = \frac{\ln(S_0/K) + (r_d - r_f + \sigma^2/2)t}{\sigma\sqrt{t}}
 //! $$
 //!
 //! and
 //!
 //! $$
-//! d_2 = d_1 - \sigma\sqrt{T}
+//! d_2 = d_1 - \sigma\sqrt{t}
 //! $$
 //!
 //! * $S_0$ is the current spot rate
@@ -29,7 +29,7 @@
 //! * $\mathcal{N}(x)$ is the cumulative normal distribution function
 //! * $r_d$ is domestic risk free [[simple interest]] rate
 //! * $r_f$ is foreign risk free simple interest rate
-//! * $T$ is the time to maturity (calculated according to the appropriate day count convention)
+//! * $t$ is the time to maturity (calculated according to the appropriate day count convention)
 //! * $\sigma$ is the volatility of the FX rate.
 //!
 //! Command arguments are:
@@ -37,7 +37,7 @@
 //! * is_call (bool): True for a call, false for a put.
 //! * S (f64): The asset price.
 //! * K (f64): The strike price.
-//! * T (f64): The time to expiry in years.
+//! * t (f64): The time to expiry in years.
 //! * r (f64): The risk free rate of the base currency.
 //! * rf (f64): The risk free rate of the quote currency.
 //! * v (f64): The asset volatility.
@@ -57,13 +57,13 @@ pub struct GarmanKohlhagen {}
 impl GarmanKohlhagen {
     /// The fair value of a currency option.
     #[allow(non_snake_case)]
-    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, rf: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r - rf + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, rf: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r - rf + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
         if is_call {
-            S * exp(-rf * T) * cdf(d1) - K * exp(-r * T) * cdf(d2)
+            S * exp(-rf * t) * cdf(d1) - K * exp(-r * t) * cdf(d2)
         } else {
-            K * exp(-r * T) * cdf(-d2) - S * exp(-rf * T) * cdf(-d1)
+            K * exp(-r * t) * cdf(-d2) - S * exp(-rf * t) * cdf(-d1)
         }
     }
 
@@ -73,7 +73,7 @@ impl GarmanKohlhagen {
         is_call: bool,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         rf: f64,
         p: f64,
@@ -82,7 +82,7 @@ impl GarmanKohlhagen {
     ) -> f64 {
         solve_ivol(
             p,
-            |v| GarmanKohlhagen::price(is_call, S, K, T, r, rf, v),
+            |v| GarmanKohlhagen::price(is_call, S, K, t, r, rf, v),
             max_iterations,
             epsilon,
         )
@@ -91,8 +91,8 @@ impl GarmanKohlhagen {
     /// Return a struct to calculate greeks numerically using finite difference methods.
     pub fn fdm_greeks(is_call: bool) -> FdmWithDividendYield {
         #[allow(non_snake_case)]
-        FdmWithDividendYield::new(move |S: f64, K: f64, T: f64, r: f64, rf: f64, v: f64| {
-            GarmanKohlhagen::price(is_call, S, K, T, r, rf, v)
+        FdmWithDividendYield::new(move |S: f64, K: f64, t: f64, r: f64, rf: f64, v: f64| {
+            GarmanKohlhagen::price(is_call, S, K, t, r, rf, v)
         })
     }
 }

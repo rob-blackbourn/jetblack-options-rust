@@ -4,11 +4,11 @@
 //! paying stock option.
 //!
 //! $$
-//! d_1 = \frac{1}{\sigma\sqrt{T - t}}\left[\ln\left(\frac{S_t}{K}\right) + \left(r + \frac{\sigma^2}{2}\right)(T - t)\right]
+//! d_1 = \frac{1}{\sigma\sqrt{t - t}}\left[\ln\left(\frac{S_t}{K}\right) + \left(r + \frac{\sigma^2}{2}\right)(t - t)\right]
 //! $$
 //!
 //! $$
-//! d_2 = d_1 - \sigma\sqrt{T - t}
+//! d_2 = d_1 - \sigma\sqrt{t - t}
 //! $$
 //!
 //! The following arguments are common.
@@ -16,7 +16,7 @@
 //! * is_call (bool): True for a call, false for a put.
 //! * S (f64): The asset price.
 //! * K (f64): The strike price.
-//! * T (f64): The time to expiry in years.
+//! * t (f64): The time to expiry in years.
 //! * r (f64): The risk free rate.
 //! * v (f64): The asset volatility.
 //! * max_iterations (usize): The maximum number of iterations before
@@ -40,20 +40,20 @@ impl BlackScholes73 {
     /// The Black-Scholes price for a non-dividend paying stock.
     ///
     /// $$
-    /// C(S_t, t) = N(d_1)S_t - N(d_2)Ke^{-r(T - t)}
+    /// C(S_t, t) = N(d_1)S_t - N(d_2)Ke^{-r(t - t)}
     /// $$
     ///
     /// $$
-    /// P(S_t, t) = N(-d_2) Ke^{-r(T - t)} - N(-d_1) S_t
+    /// P(S_t, t) = N(-d_2) Ke^{-r(t - t)} - N(-d_1) S_t
     /// $$
     #[allow(non_snake_case)]
-    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
         if is_call {
-            S * cdf(d1) - K * exp(-r * T) * cdf(d2)
+            S * cdf(d1) - K * exp(-r * t) * cdf(d2)
         } else {
-            K * exp(-r * T) * cdf(-d2) - S * cdf(-d1)
+            K * exp(-r * t) * cdf(-d2) - S * cdf(-d1)
         }
     }
 
@@ -67,7 +67,7 @@ impl BlackScholes73 {
         is_call: bool,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         p: f64,
         max_iterations: usize,
@@ -75,7 +75,7 @@ impl BlackScholes73 {
     ) -> f64 {
         return solve_ivol(
             p,
-            |v| BlackScholes73::price(is_call, S, K, T, r, v),
+            |v| BlackScholes73::price(is_call, S, K, t, r, v),
             max_iterations,
             epsilon,
         );
@@ -86,83 +86,83 @@ impl BlackScholes73 {
         // Normalize the price function to match that required by the finite
         // difference methods.
         #[allow(non_snake_case)]
-        FdmWithoutCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| {
-            BlackScholes73::price(is_call, S, K, T, r, b)
+        FdmWithoutCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64| {
+            BlackScholes73::price(is_call, S, K, t, r, b)
         })
     }
 
     /// The sensitivity to the underlying price.
     #[allow(non_snake_case)]
-    pub fn delta(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
+    pub fn delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
         if is_call { cdf(d1) } else { -cdf(-d1) }
     }
 
     /// Calculates option gamma
     #[allow(non_snake_case)]
-    pub fn gamma(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-        pdf(d1) / (S * v * sqrt(T))
+    pub fn gamma(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        pdf(d1) / (S * v * sqrt(t))
     }
 
     /// The sensitivity to time.
     #[allow(non_snake_case)]
-    pub fn theta(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn theta(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
 
         if is_call {
-            -((S * pdf(d1) * v) / (2.0 * sqrt(T))) - r * K * exp(-r * T) * cdf(d2)
+            -((S * pdf(d1) * v) / (2.0 * sqrt(t))) - r * K * exp(-r * t) * cdf(d2)
         } else {
-            -((S * pdf(d1) * v) / (2.0 * sqrt(T))) + r * K * exp(-r * T) * cdf(-d2)
+            -((S * pdf(d1) * v) / (2.0 * sqrt(t))) + r * K * exp(-r * t) * cdf(-d2)
         }
     }
 
     #[allow(non_snake_case)]
-    pub fn vega(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-        S * sqrt(T) * pdf(d1)
+    pub fn vega(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        S * sqrt(t) * pdf(d1)
     }
 
     #[allow(non_snake_case)]
-    pub fn rho(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn rho(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
 
         if is_call {
-            K * T * exp(-r * T) * cdf(d2)
+            K * t * exp(-r * t) * cdf(d2)
         } else {
-            -K * T * exp(-r * T) * cdf(-d2)
+            -K * t * exp(-r * t) * cdf(-d2)
         }
     }
 
     /// The ratio of change in delta to the change in volatility.
     #[allow(non_snake_case)]
-    pub fn vanna(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + v * v / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn vanna(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + v * v / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
         -d2 * pdf(d1) / v
     }
 
     /// The rate at which the delta of an option or warrant changes with respect to time.
     #[allow(non_snake_case)]
-    pub fn charm(is_call: bool, S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn charm(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
 
         if is_call {
-            -pdf(d1) * (r / (v * sqrt(T)) - d2 / (2.0 * T))
+            -pdf(d1) * (r / (v * sqrt(t)) - d2 / (2.0 * t))
         } else {
-            -pdf(d1) * (r / (v * sqrt(T)) - d2 / (2.0 * T))
+            -pdf(d1) * (r / (v * sqrt(t)) - d2 / (2.0 * t))
         }
     }
 
     /// The rate at which the vega of an option will react to volatility in the market.
     #[allow(non_snake_case)]
-    pub fn vomma(S: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
-        BlackScholes73::vega(S, K, T, r, v) * d1 * d2 / v
+    pub fn vomma(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = d1 - v * sqrt(t);
+        BlackScholes73::vega(S, K, t, r, v) * d1 * d2 / v
     }
 }
 
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected) in [
+        for (is_call, S, K, r, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -241,7 +241,7 @@ mod tests {
                 6.3877394613564746,
             ),
         ] {
-            let actual = BlackScholes73::price(is_call, S, K, T, r, v);
+            let actual = BlackScholes73::price(is_call, S, K, t, r, v);
             assert!(is_close_to(actual, expected, f64::EPSILON))
         }
     }
@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn it_should_calc_ivol() {
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, p, expected) in [
+        for (is_call, F, K, r, t, p, expected) in [
             (
                 true,
                 110.0,
@@ -305,7 +305,7 @@ mod tests {
                 0.125,
             ),
         ] {
-            let actual = BlackScholes73::ivol(is_call, F, K, T, r, p, 100, f64::EPSILON / 2.0);
+            let actual = BlackScholes73::ivol(is_call, F, K, t, r, p, 100, f64::EPSILON / 2.0);
             assert!(is_close_to(actual, expected, 1e-12))
         }
     }
@@ -318,7 +318,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected, threshold) in [
+        for (is_call, S, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -380,17 +380,17 @@ mod tests {
                 1e-10,
             ),
         ] {
-            let analytic = BlackScholes73::delta(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::delta(is_call, S, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].delta(S, K, T, r, v, 0.0001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].delta(S, K, t, r, v, 0.0001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].delta({}. {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numeric,
@@ -407,7 +407,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected, threshold) in [
+        for (is_call, S, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -469,17 +469,17 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = BlackScholes73::gamma(S, K, T, r, v);
+            let analytic = BlackScholes73::gamma(S, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].gamma(S, K, T, r, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].gamma(S, K, t, r, v, 0.01, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].gamma({}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numeric,
@@ -496,7 +496,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected, threshold) in [
+        for (is_call, S, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -558,13 +558,13 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = BlackScholes73::theta(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::theta(is_call, S, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numeric = ng[&is_call].theta(
                 S,
                 K,
-                T,
+                t,
                 r,
                 v,
                 1.0 / 365.0 / 24.0 / 60.0,
@@ -576,7 +576,7 @@ mod tests {
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numeric,
@@ -593,7 +593,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected, threshold) in [
+        for (is_call, S, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -655,17 +655,17 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = BlackScholes73::vega(S, K, T, r, v);
+            let analytic = BlackScholes73::vega(S, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].vega(S, K, T, r, v, 0.000001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vega(S, K, t, r, v, 0.000001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].vega({}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numeric,
@@ -682,7 +682,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected, threshold) in [
+        for (is_call, S, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -744,17 +744,17 @@ mod tests {
                 1e-8,
             ),
         ] {
-            let analytic = BlackScholes73::rho(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::rho(is_call, S, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].rho(S, K, T, r, v, 0.00001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].rho(S, K, t, r, v, 0.00001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].rho({}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numeric,
@@ -771,7 +771,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected) in [
+        for (is_call, S, K, r, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -827,10 +827,10 @@ mod tests {
                 1.5924538086889684,
             ),
         ] {
-            let analytic = BlackScholes73::vanna(S, K, T, r, v);
+            let analytic = BlackScholes73::vanna(S, K, t, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vanna(S, K, T, r, v, 0.01, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vanna(S, K, t, r, v, 0.01, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -843,7 +843,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected) in [
+        for (is_call, S, K, r, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -899,11 +899,11 @@ mod tests {
                 -0.6035085054564097,
             ),
         ] {
-            let analytic = BlackScholes73::charm(is_call, S, K, T, r, v);
+            let analytic = BlackScholes73::charm(is_call, S, K, t, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
             let numeric =
-                ng[&is_call].charm(S, K, T, r, v, 0.01, 1.0 / 365.0, DifferenceMethod::Central);
+                ng[&is_call].charm(S, K, t, r, v, 0.01, 1.0 / 365.0, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-5));
         }
     }
@@ -916,7 +916,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, T, v, expected) in [
+        for (is_call, S, K, r, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -972,10 +972,10 @@ mod tests {
                 52.74707656927028,
             ),
         ] {
-            let analytic = BlackScholes73::vomma(S, K, T, r, v);
+            let analytic = BlackScholes73::vomma(S, K, t, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vomma(S, K, T, r, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vomma(S, K, t, r, v, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-2));
         }
     }

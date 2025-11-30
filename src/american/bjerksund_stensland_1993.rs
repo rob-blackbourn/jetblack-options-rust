@@ -7,7 +7,7 @@
 //! * is_call (bool): True for a call, false for a put.
 //! * S (f64): The current asset price.
 //! * K (f64): The option strike price
-//! * T (f64): The time to maturity of the option in years.
+//! * t (f64): The time to maturity of the option in years.
 //! * r (f64): The risk free rate.
 //! * b (f64): The cost of carry of the asset.
 //! * v (f64): The volatility of the asset.
@@ -32,49 +32,49 @@ pub struct BjerksundStensland1993 {}
 
 impl BjerksundStensland1993 {
     #[allow(non_snake_case)]
-    fn _phi(S: f64, T: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
-        let lambda_ = (-r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v)) * T;
-        let d = -(log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * T) / (v * sqrt(T));
+    fn _phi(S: f64, t: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
+        let lambda_ = (-r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v)) * t;
+        let d = -(log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * t) / (v * sqrt(t));
         let kappa = 2.0 * b / (v * v) + 2.0 * gamma_ - 1.0;
         exp(lambda_)
             * pow(S, gamma_)
-            * (cdf(d) - pow(i / S, kappa) * cdf(d - 2.0 * log(i / S) / (v * sqrt(T))))
+            * (cdf(d) - pow(i / S, kappa) * cdf(d - 2.0 * log(i / S) / (v * sqrt(t))))
     }
 
     #[allow(non_snake_case)]
-    fn _call_price(S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn _call_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         if b >= r {
             // We can use Black-Scholes as it is never optimal to exercise before
             // maturity.
-            return BS::price(true, S, K, T, r, b, v);
+            return BS::price(true, S, K, t, r, b, v);
         }
 
         let beta =
             (1.0 / 2.0 - b / (v * v)) + sqrt(sqr(b / (v * v) - 1.0 / 2.0) + 2.0 * r / (v * v));
         let b_infinity = beta / (beta - 1.0) * K;
         let b0 = fmax(K, r / (r - b) * K);
-        let ht = -(b * T + 2.0 * v * sqrt(T)) * b0 / (b_infinity - b0);
+        let ht = -(b * t + 2.0 * v * sqrt(t)) * b0 / (b_infinity - b0);
         let i = b0 + (b_infinity - b0) * (1.0 - exp(ht));
         let alpha = (i - K) * pow(i, -beta);
         if S >= i {
             S - K
         } else {
-            alpha * pow(S, beta) - alpha * BjerksundStensland1993::_phi(S, T, beta, i, i, r, b, v)
-                + BjerksundStensland1993::_phi(S, T, 1.0, i, i, r, b, v)
-                - BjerksundStensland1993::_phi(S, T, 1.0, K, i, r, b, v)
-                - K * BjerksundStensland1993::_phi(S, T, 0.0, i, i, r, b, v)
-                + K * BjerksundStensland1993::_phi(S, T, 0.0, K, i, r, b, v)
+            alpha * pow(S, beta) - alpha * BjerksundStensland1993::_phi(S, t, beta, i, i, r, b, v)
+                + BjerksundStensland1993::_phi(S, t, 1.0, i, i, r, b, v)
+                - BjerksundStensland1993::_phi(S, t, 1.0, K, i, r, b, v)
+                - K * BjerksundStensland1993::_phi(S, t, 0.0, i, i, r, b, v)
+                + K * BjerksundStensland1993::_phi(S, t, 0.0, K, i, r, b, v)
         }
     }
 
     /// The Bjerksund and Stensland (1993) American approximation.
     #[allow(non_snake_case)]
-    pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64) -> f64 {
+    pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         if is_call {
-            BjerksundStensland1993::_call_price(S, K, T, r, b, v)
+            BjerksundStensland1993::_call_price(S, K, t, r, b, v)
         } else {
             // Use the Bjerksund and Stensland put-call transformation
-            BjerksundStensland1993::_call_price(K, S, T, r - b, -b, v)
+            BjerksundStensland1993::_call_price(K, S, t, r - b, -b, v)
         }
     }
 
@@ -84,7 +84,7 @@ impl BjerksundStensland1993 {
         is_call: bool,
         S: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         b: f64,
         p: f64,
@@ -93,7 +93,7 @@ impl BjerksundStensland1993 {
     ) -> f64 {
         solve_ivol(
             p,
-            |v| BjerksundStensland1993::price(is_call, S, K, T, r, b, v),
+            |v| BjerksundStensland1993::price(is_call, S, K, t, r, b, v),
             max_iterations,
             epsilon,
         )
@@ -102,8 +102,8 @@ impl BjerksundStensland1993 {
     /// Return a struct to calculate greeks numerically using finite difference methods.
     pub fn fdm_greeks(is_call: bool) -> FdmWithCarry {
         #[allow(non_snake_case)]
-        FdmWithCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
-            BjerksundStensland1993::price(is_call, S, K, T, r, b, v)
+        FdmWithCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64, v: f64| {
+            BjerksundStensland1993::price(is_call, S, K, t, r, b, v)
         })
     }
 }
@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -189,7 +189,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let actual = BjerksundStensland1993::price(is_call, S, K, T, r, b, v);
+            let actual = BjerksundStensland1993::price(is_call, S, K, t, r, b, v);
             assert!(is_close_to(actual, expected, 1e-12));
         }
     }
@@ -202,7 +202,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -265,7 +265,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].delta(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].delta(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, 1e-11));
         }
     }
@@ -278,7 +278,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -341,7 +341,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, 1e-9));
         }
     }

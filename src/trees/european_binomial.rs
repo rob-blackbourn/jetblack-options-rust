@@ -5,7 +5,7 @@
 //! * is_call (bool): True for a call, false for a put.
 //! * S (f64): The current asset price.
 //! * K (f64): The option strike price
-//! * T (f64): The time to maturity of the option in years.
+//! * t (f64): The time to maturity of the option in years.
 //! * r (f64): The risk free rate.
 //! * b (f64): The cost of carry of the asset.
 //! * v (f64): The volatility of the asset.
@@ -22,8 +22,8 @@ use crate::{
 
 /// The fair value.
 #[allow(non_snake_case)]
-pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64, n: u64) -> f64 {
-    let dt = T / n as f64;
+pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64, n: u64) -> f64 {
+    let dt = t / n as f64;
     let u = exp(v * sqrt(dt));
     let d = 1.0 / u;
     let a = exp(b * dt);
@@ -47,7 +47,7 @@ pub fn price(is_call: bool, S: f64, K: f64, T: f64, r: f64, b: f64, v: f64, n: u
         }
     }
 
-    exp(-r * T) * sum
+    exp(-r * t) * sum
 }
 
 /// Calculate the volatility of an option that is implied by the price.
@@ -56,7 +56,7 @@ pub fn ivol(
     is_call: bool,
     S: f64,
     K: f64,
-    T: f64,
+    t: f64,
     r: f64,
     b: f64,
     p: f64,
@@ -66,7 +66,7 @@ pub fn ivol(
 ) -> f64 {
     solve_ivol(
         p,
-        |v| price(is_call, S, K, T, r, b, v, n),
+        |v| price(is_call, S, K, t, r, b, v, n),
         max_iterations,
         epsilon,
     )
@@ -75,8 +75,8 @@ pub fn ivol(
 /// Return a struct to calculate greeks numerically using finite difference methods.
 pub fn fdm_greeks(is_call: bool, n: u64) -> FdmWithCarry {
     #[allow(non_snake_case)]
-    FdmWithCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64, v: f64| {
-        price(is_call, S, K, T, r, b, v, n)
+    FdmWithCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64, v: f64| {
+        price(is_call, S, K, t, r, b, v, n)
     })
 }
 
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -167,7 +167,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let value = price(is_call, S, K, T, r, b, v, 200);
+            let value = price(is_call, S, K, t, r, b, v, 200);
             assert!(is_close_to(value, expected, threshold));
         }
     }
@@ -180,7 +180,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -249,7 +249,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].delta(S, K, T, r, b, v, 1e-2, DifferenceMethod::Central);
+            let numeric = ng[&is_call].delta(S, K, t, r, b, v, 1e-2, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, threshold));
         }
     }
@@ -262,7 +262,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -331,14 +331,14 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].gamma(S, K, T, r, b, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, expected, threshold),
                 "[{}].gamma({}, {}, {}, {}, {}, {})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v
@@ -354,7 +354,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -424,7 +424,7 @@ mod tests {
         ] {
             let b = r - q;
             let numeric =
-                ng[&is_call].theta(S, K, T, r, b, v, 1.0 / 365.0, DifferenceMethod::Central);
+                ng[&is_call].theta(S, K, t, r, b, v, 1.0 / 365.0, DifferenceMethod::Central);
             assert!(is_close_to(numeric, expected, threshold));
         }
     }
@@ -437,7 +437,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -506,14 +506,14 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].vega(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vega(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, expected, threshold),
                 "[{}].vega({}, {}, {}, {}, {}, {})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v
@@ -529,7 +529,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, T, v, expected, threshold) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -598,14 +598,14 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].rho(S, K, T, r, b, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].rho(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, expected, threshold),
                 "[{}].rho({}, {}, {}, {}, {}, {})",
                 is_call,
                 S,
                 K,
-                T,
+                t,
                 r,
                 b,
                 v
