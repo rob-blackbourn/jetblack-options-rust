@@ -20,64 +20,68 @@ use crate::{
     distributions::binomial_coefficient::comb, fdm::FdmWithCarry, implied_volatility::solve_ivol,
 };
 
-/// The fair value.
-#[allow(non_snake_case)]
-pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64, n: u64) -> f64 {
-    let dt = t / n as f64;
-    let u = exp(v * sqrt(dt));
-    let d = 1.0 / u;
-    let a = exp(b * dt);
-    let p = (a - d) / (u - d);
-    let A = (log(K / (S * pow(d, n as f64))) / log(u / d)) as u64 + 1;
+pub struct EuropeanBinomial {}
 
-    let mut sum = 0.0;
-    if is_call {
-        for j in A..=n {
-            sum += comb(n as u64, j as u64)
-                * pow(p, j as f64)
-                * pow(1.0 - p, (n - j) as f64)
-                * (S * pow(u, j as f64) * pow(d, (n - j) as f64) - K);
+impl EuropeanBinomial {
+    /// The fair value.
+    #[allow(non_snake_case)]
+    pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64, n: u64) -> f64 {
+        let dt = t / n as f64;
+        let u = exp(v * sqrt(dt));
+        let d = 1.0 / u;
+        let a = exp(b * dt);
+        let p = (a - d) / (u - d);
+        let A = (log(K / (S * pow(d, n as f64))) / log(u / d)) as u64 + 1;
+
+        let mut sum = 0.0;
+        if is_call {
+            for j in A..=n {
+                sum += comb(n as u64, j as u64)
+                    * pow(p, j as f64)
+                    * pow(1.0 - p, (n - j) as f64)
+                    * (S * pow(u, j as f64) * pow(d, (n - j) as f64) - K);
+            }
+        } else {
+            for j in 0..A {
+                sum += comb(n, j)
+                    * pow(p, j as f64)
+                    * pow(1.0 - p, (n - j) as f64)
+                    * (K - S * pow(u, j as f64) * pow(d, (n - j) as f64));
+            }
         }
-    } else {
-        for j in 0..A {
-            sum += comb(n, j)
-                * pow(p, j as f64)
-                * pow(1.0 - p, (n - j) as f64)
-                * (K - S * pow(u, j as f64) * pow(d, (n - j) as f64));
-        }
+
+        exp(-r * t) * sum
     }
 
-    exp(-r * t) * sum
-}
-
-/// Calculate the volatility of an option that is implied by the price.
-#[allow(non_snake_case)]
-pub fn ivol(
-    is_call: bool,
-    S: f64,
-    K: f64,
-    t: f64,
-    r: f64,
-    b: f64,
-    p: f64,
-    n: u64,
-    max_iterations: usize,
-    epsilon: f64,
-) -> f64 {
-    solve_ivol(
-        p,
-        |v| price(is_call, S, K, t, r, b, v, n),
-        max_iterations,
-        epsilon,
-    )
-}
-
-/// Return a struct to calculate greeks numerically using finite difference methods.
-pub fn fdm_greeks(is_call: bool, n: u64) -> FdmWithCarry {
+    /// Calculate the volatility of an option that is implied by the price.
     #[allow(non_snake_case)]
-    FdmWithCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64, v: f64| {
-        price(is_call, S, K, t, r, b, v, n)
-    })
+    pub fn ivol(
+        is_call: bool,
+        S: f64,
+        K: f64,
+        t: f64,
+        r: f64,
+        b: f64,
+        p: f64,
+        n: u64,
+        max_iterations: usize,
+        epsilon: f64,
+    ) -> f64 {
+        solve_ivol(
+            p,
+            |v| EuropeanBinomial::price(is_call, S, K, t, r, b, v, n),
+            max_iterations,
+            epsilon,
+        )
+    }
+
+    /// Return a struct to calculate greeks numerically using finite difference methods.
+    pub fn fdm_greeks(is_call: bool, n: u64) -> FdmWithCarry {
+        #[allow(non_snake_case)]
+        FdmWithCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64, v: f64| {
+            EuropeanBinomial::price(is_call, S, K, t, r, b, v, n)
+        })
+    }
 }
 
 #[cfg(test)]
@@ -167,7 +171,7 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let value = price(is_call, S, K, t, r, b, v, 200);
+            let value = EuropeanBinomial::price(is_call, S, K, t, r, b, v, 200);
             assert!(is_close_to(value, expected, threshold));
         }
     }
@@ -175,8 +179,8 @@ mod tests {
     #[test]
     fn it_should_calc_delta() {
         let ng = HashMap::from([
-            (true, fdm_greeks(true, 100)),
-            (false, fdm_greeks(false, 100)),
+            (true, EuropeanBinomial::fdm_greeks(true, 100)),
+            (false, EuropeanBinomial::fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -257,8 +261,8 @@ mod tests {
     #[test]
     fn it_should_calc_gamma() {
         let ng = HashMap::from([
-            (true, fdm_greeks(true, 100)),
-            (false, fdm_greeks(false, 100)),
+            (true, EuropeanBinomial::fdm_greeks(true, 100)),
+            (false, EuropeanBinomial::fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -349,8 +353,8 @@ mod tests {
     #[test]
     fn it_should_calc_theta() {
         let ng = HashMap::from([
-            (true, fdm_greeks(true, 100)),
-            (false, fdm_greeks(false, 100)),
+            (true, EuropeanBinomial::fdm_greeks(true, 100)),
+            (false, EuropeanBinomial::fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -432,8 +436,8 @@ mod tests {
     #[test]
     fn it_should_calc_vega() {
         let ng = HashMap::from([
-            (true, fdm_greeks(true, 100)),
-            (false, fdm_greeks(false, 100)),
+            (true, EuropeanBinomial::fdm_greeks(true, 100)),
+            (false, EuropeanBinomial::fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]
@@ -524,8 +528,8 @@ mod tests {
     #[test]
     fn it_should_calc_rho() {
         let ng = HashMap::from([
-            (true, fdm_greeks(true, 100)),
-            (false, fdm_greeks(false, 100)),
+            (true, EuropeanBinomial::fdm_greeks(true, 100)),
+            (false, EuropeanBinomial::fdm_greeks(false, 100)),
         ]);
 
         #[allow(non_snake_case)]

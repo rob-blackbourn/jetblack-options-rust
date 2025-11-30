@@ -1,3 +1,4 @@
 //! Calculators of variance
 
-pub mod black_scholes;
+mod black_scholes;
+pub use black_scholes::BlackScholes;
