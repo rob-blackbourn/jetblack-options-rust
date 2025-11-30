@@ -1,9 +1,5 @@
 //! Jarrow-Rudd binomial option pricing
 
-use core::f64;
-
-use libm::{exp, fmax, pow, sqrt};
-
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
 
 /// Option valuations using a Jarrow-Rudd binomial pricing tree.
@@ -42,14 +38,17 @@ impl JarrowRudd {
         let z = if is_call { 1.0 } else { -1.0 };
 
         let dT = t / n as f64;
-        let u = exp((b - (v * v) / 2.0) * dT + v * sqrt(dT));
-        let d = exp((b - (v * v) / 2.0) * dT - v * sqrt(dT));
+        let u = ((b - (v * v) / 2.0) * dT + v * dT.sqrt()).exp();
+        let d = ((b - (v * v) / 2.0) * dT - v * dT.sqrt()).exp();
         let p = 0.5;
-        let df = exp(-r * dT);
+        let df = (-r * dT).exp();
 
         let mut option_value = vec![0.0; n + 1];
         for i in 0..=n {
-            option_value[i] = fmax(0.0, z * (S * pow(u, i as f64) * pow(d, (n - i) as f64) - K));
+            option_value[i] = f64::max(
+                0.0,
+                z * (S * f64::powi(u, i as i32) * f64::powi(d, (n - i) as i32) - K),
+            );
         }
 
         let mut delta = f64::NAN;
@@ -61,8 +60,8 @@ impl JarrowRudd {
                 if is_european {
                     option_value[i] = (p * option_value[i + 1] + (1.0 - p) * option_value[i]) * df;
                 } else {
-                    option_value[i] = fmax(
-                        z * (S * pow(u, i as f64) * pow(d, (j - i) as f64) - K),
+                    option_value[i] = f64::max(
+                        z * (S * f64::powi(u, i as i32) * f64::powi(d, (j - i) as i32) - K),
                         (p * option_value[i + 1] + (1.0 - p) * option_value[i]) * df,
                     );
                 }

@@ -1,7 +1,5 @@
 //! Leisen Reimer binomial option pricing.
 
-use libm::{exp, fmax, log, pow, sqrt};
-
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
 
 fn sqr(x: f64) -> f64 {
@@ -42,36 +40,39 @@ impl LeisenReimer {
         let n = if n % 2 == 0 { n + 1 } else { n };
         let z = if is_call { 1.0 } else { -1.0 };
 
-        let d1 = (log(S / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         // Using Preizer-Pratt inversion method 2
         let hd1 = 0.5
             + d1.signum()
-                * pow(
-                    0.25 - 0.25
-                        * exp(-sqr(d1 / (n as f64 + 1.0 / 3.0 + 0.1 / (n + 1) as f64))
-                            * (n as f64 + 1.0 / 6.0)),
-                    0.5,
-                );
+                * (0.25
+                    - 0.25
+                        * (-sqr(d1 / (n as f64 + 1.0 / 3.0 + 0.1 / (n + 1) as f64))
+                            * (n as f64 + 1.0 / 6.0))
+                            .exp())
+                .sqrt();
         let hd2 = 0.5
             + d2.signum()
-                * pow(
-                    0.25 - 0.25
-                        * exp(-sqr(d2 / (n as f64 + 1.0 / 3.0 + 0.1 / (n + 1) as f64))
-                            * (n as f64 + 1.0 / 6.0)),
-                    0.5,
-                );
+                * (0.25
+                    - 0.25
+                        * (-sqr(d2 / (n as f64 + 1.0 / 3.0 + 0.1 / (n + 1) as f64))
+                            * (n as f64 + 1.0 / 6.0))
+                            .exp())
+                .sqrt();
 
         let dT = t / n as f64;
         let p = hd2;
-        let u = exp(b * dT) * hd1 / hd2;
-        let d = (exp(b * dT) - p * u) / (1.0 - p);
-        let df = exp(-r * dT);
+        let u = (b * dT).exp() * hd1 / hd2;
+        let d = ((b * dT).exp() - p * u) / (1.0 - p);
+        let df = (-r * dT).exp();
 
         let mut option_value = vec![0.0; (n + 1) as usize];
         for i in 0..=n {
-            option_value[i] = fmax(0.0, z * (S * pow(u, i as f64) * pow(d, (n - i) as f64) - K));
+            option_value[i] = f64::max(
+                0.0,
+                z * (S * f64::powi(u, i as i32) * f64::powi(d, (n - i) as i32) - K),
+            );
         }
 
         let mut delta = f64::NAN;
@@ -83,8 +84,8 @@ impl LeisenReimer {
                 if is_european {
                     option_value[i] = (p * option_value[i + 1] + (1.0 - p) * option_value[i]) * df;
                 } else {
-                    option_value[i] = fmax(
-                        z * (S * pow(u, i as f64) * pow(d, (j - i) as f64) - K),
+                    option_value[i] = f64::max(
+                        z * (S * f64::powi(u, i as i32) * f64::powi(d, (j - i) as i32) - K),
                         (p * option_value[i + 1] + (1.0 - p) * option_value[i]) * df,
                     );
                 }

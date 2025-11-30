@@ -1,6 +1,5 @@
 //! # Option valuations using a trinomial tree.
 
-use libm::{exp, fmax, sqrt};
 use std::cmp::max;
 
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
@@ -51,20 +50,20 @@ impl Trinomial {
         let z = if is_call { 1.0 } else { -1.0 };
 
         let dT = t / n as f64;
-        let u = exp(v * sqrt(2.0 * dT));
-        let d = exp(-v * sqrt(2.0 * dT));
-        let pu = sqr((exp(b * dT / 2.0) - exp(-v * sqrt(dT / 2.0)))
-            / (exp(v * sqrt(dT / 2.0)) - exp(-v * sqrt(dT / 2.0))));
-        let pd = sqr((exp(v * sqrt(dT / 2.0)) - exp(b * dT / 2.0))
-            / (exp(v * sqrt(dT / 2.0)) - exp(-v * sqrt(dT / 2.0))));
+        let u = (v * (2.0 * dT).sqrt()).exp();
+        let d = (-v * (2.0 * dT).sqrt()).exp();
+        let pu = sqr(((b * dT / 2.0).exp() - (-v * (dT / 2.0).sqrt()).exp())
+            / ((v * (dT / 2.0).sqrt()).exp() - (-v * (dT / 2.0).sqrt()).exp()));
+        let pd = sqr(((v * (dT / 2.0).sqrt()).exp() - (b * dT / 2.0).exp())
+            / ((v * (dT / 2.0).sqrt()).exp() - (-v * (dT / 2.0).sqrt()).exp()));
         let pm = 1.0 - pu - pd;
-        let Df = exp(-r * dT);
+        let Df = (-r * dT).exp();
 
         let mut option_value = vec![0.0; 1 + 2 * n];
         for i in 0..option_value.len() {
             let I = i as i32;
             let N = n as i32;
-            option_value[i] = fmax(
+            option_value[i] = f64::max(
                 0.0,
                 z * (S * ipow(u, max(I - N, 0)) * ipow(d, max(N - I, 0)) - K),
             );
@@ -83,7 +82,7 @@ impl Trinomial {
                 if is_european {
                     let I = i as i32;
                     let J = j as i32;
-                    option_value[i] = fmax(
+                    option_value[i] = f64::max(
                         z * (S * ipow(u, max(I - J, 0)) * ipow(d, max(J - I, 0)) - K),
                         option_value[i],
                     );
