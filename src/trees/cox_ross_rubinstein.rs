@@ -1,7 +1,5 @@
 //! Cox, Ross & Rubinstein
 
-use libm::{exp, fmax, pow, sqrt};
-
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
 
 /// Option valuation implementations using the Cox, Ross & Rubinstein
@@ -41,15 +39,18 @@ impl CoxRossRubinstein {
         let z = if is_call { 1.0 } else { -1.0 };
 
         let dT = t / (n as f64);
-        let u = exp(v * sqrt(dT));
+        let u = (v * dT.sqrt()).exp();
         let d = 1.0 / u;
-        let a = exp(b * dT);
+        let a = (b * dT).exp();
         let p = (a - d) / (u - d);
-        let df = exp(-r * dT);
+        let df = (-r * dT).exp();
 
         let mut option_value = vec![0.0; n + 1];
         for i in 0..option_value.len() {
-            option_value[i] = fmax(0.0, z * (S * pow(u, i as f64) * pow(d, (n - i) as f64) - K));
+            option_value[i] = f64::max(
+                0.0,
+                z * (S * (u).powi(i as i32) * d.powi((n - i) as i32) - K),
+            );
         }
 
         let mut delta = f64::NAN;
@@ -61,8 +62,8 @@ impl CoxRossRubinstein {
                 if is_european {
                     option_value[i] = (p * option_value[i + 1] + (1.0 - p) * option_value[i]) * df;
                 } else {
-                    option_value[i] = fmax(
-                        z * (S * pow(u, i as f64) * pow(d, (j - i) as f64) - K),
+                    option_value[i] = f64::max(
+                        z * (S * u.powi(i as i32) * d.powi((j - i) as i32) - K),
                         (p * option_value[i + 1] + (1.0 - p) * option_value[i]) * df,
                     );
                 }
@@ -537,7 +538,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.4761276405278343,
+                -2.4761188035658854,
                 1e-12,
             ),
             (
@@ -549,7 +550,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -1.4187804088872178,
+                -1.4187716154747787,
                 1e-12,
             ),
             (
@@ -561,7 +562,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -4.032411057869996,
+                -4.032397277543964,
                 1e-12,
             ),
             (
@@ -573,7 +574,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.2064322687333013,
+                -2.2064185383441792,
                 1e-12,
             ),
             (
@@ -585,22 +586,35 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.34573941621434123,
+                0.34574624956666966,
                 1e-12,
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_european][&is_call].theta(
+            let actual = ng[&is_european][&is_call].theta(
                 S,
                 K,
                 t,
                 r,
                 b,
                 v,
-                1.0 / 365.0,
+                1.0 / 365.0 / 60.0,
                 DifferenceMethod::Central,
             );
-            assert!(is_close_to(numeric, expected, threshold));
+            assert!(
+                is_close_to(actual, expected, threshold),
+                "[{}][{}].theta({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_european,
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                actual,
+                expected - actual
+            );
         }
     }
 
@@ -634,7 +648,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                13.589147303977533,
+                13.589147303801674,
                 1e-12,
             ),
             (
@@ -646,7 +660,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                13.589147303972009,
+                13.589147303988524,
                 1e-12,
             ),
             (
@@ -658,7 +672,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                26.703128947528132,
+                26.70312894742155,
                 1e-12,
             ),
             (
@@ -670,7 +684,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                26.70312894752369,
+                26.703128947591193,
                 1e-12,
             ),
             (
@@ -682,7 +696,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                17.34480813834477,
+                17.344808138310462,
                 1e-12,
             ),
             (
@@ -694,17 +708,17 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                17.34480813833894,
+                17.344808138481937,
                 1e-11,
             ),
         ] {
             let b = r - q;
             let actual =
                 ng[&is_european][&is_call].vega(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
-            let diff = fabs(expected - actual);
+            let diff = f64::abs(expected - actual);
             assert!(
                 diff < threshold,
-                "[{}][{}].vega({}, {}, {}, {}, {}, {})",
+                "[{}][{}].vega({}, {}, {}, {}, {}, {}) -> {} (diff={:e}",
                 is_european,
                 is_call,
                 S,
@@ -712,7 +726,9 @@ mod tests {
                 t,
                 r,
                 b,
-                v
+                v,
+                actual,
+                expected - actual
             );
         }
     }
