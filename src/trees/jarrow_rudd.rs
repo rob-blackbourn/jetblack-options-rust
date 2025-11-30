@@ -1,21 +1,4 @@
-//! # Jarrow-Rudd binomial pricing tree
-//!
-//! Option valuations using a Jarrow-Rudd binomial pricing tree.
-//!
-//! The following arguments are common
-//!
-//! * is_european (bool): Tue for European, false for American.
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The current asset price.
-//! * K (f64): The option strike price
-//! * t (f64): The time to maturity of the option in years.
-//! * r (f64): The risk free rate.
-//! * b (f64): The cost of carry of the asset.
-//! * v (f64): The volatility of the asset.
-//! * n (usize): The number of the steps in the tree.
-//! * p (f64): The option price.
-//! * max_iterations (usize): The maximum number of iterations before a price is returned.
-//! * epsilon (f64): The largest acceptable error.
+//! Jarrow-Rudd binomial option pricing
 
 use core::f64;
 
@@ -23,8 +6,25 @@ use libm::{exp, fmax, pow, sqrt};
 
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
 
+/// Option valuations using a Jarrow-Rudd binomial pricing tree.
 pub struct JarrowRudd {}
 
+/// An implementation of a binomial pricing tree using the Jarrow Rudd method.
+///
+/// The following arguments are common
+///
+/// * is_european (bool): Tue for European, false for American.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * t (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry of the asset.
+/// * v (f64): The volatility of the asset.
+/// * n (usize): The number of the steps in the tree.
+/// * p (f64): The option price.
+/// * max_iterations (usize): The maximum number of iterations before a price is returned.
+/// * epsilon (f64): The largest acceptable error.
 impl JarrowRudd {
     /// Calculate the price and some greeks using a Jarrow-Rudd binomial option pricing tree.
     #[allow(non_snake_case)]

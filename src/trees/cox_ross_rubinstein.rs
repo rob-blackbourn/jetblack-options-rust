@@ -1,29 +1,29 @@
 //! Cox, Ross & Rubinstein
-//!
-//! Option valuation implementations using the Cox, Ross & Rubinstein
-//! binomial tree.
-//!
-//! The following arguments are common:
-//!
-//! * is_european (bool): True for European, false for American.
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The current asset price.
-//! * K (f64): The option strike price
-//! * t (f64): The time to maturity of the option in years.
-//! * r (f64): The risk free rate.
-//! * b (f64): The cost of carry of the asset.
-//! * v (f64): The volatility of the asset.
-//! * n (usize): The number of the steps in the tree.
-//! * p (f64): The option price.
-//! * max_iterations (usize): The maximum number of iterations before a price is returned.
-//! * epsilon (f64): The largest acceptable error.
 
 use libm::{exp, fmax, pow, sqrt};
 
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
 
+/// Option valuation implementations using the Cox, Ross & Rubinstein
+/// binomial tree.
 pub struct CoxRossRubinstein {}
 
+/// An implementation of a Cox, Ross & Rubinstein binomial tree model.
+///
+/// The following arguments are common:
+///
+/// * is_european (bool): True for European, false for American.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * t (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry of the asset.
+/// * v (f64): The volatility of the asset.
+/// * n (usize): The number of the steps in the tree.
+/// * p (f64): The option price.
+/// * max_iterations (usize): The maximum number of iterations before a price is returned.
+/// * epsilon (f64): The largest acceptable error.
 impl CoxRossRubinstein {
     /// A Cox-Ross-Rubinstein binomial tree option pricer returning the price and some greeks.
     #[allow(non_snake_case)]

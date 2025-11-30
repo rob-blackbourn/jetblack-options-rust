@@ -1,18 +1,4 @@
-//! # Optional valuation with a European binomial implementation.
-//!
-//! The following arguments are common.
-//!
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The current asset price.
-//! * K (f64): The option strike price
-//! * t (f64): The time to maturity of the option in years.
-//! * r (f64): The risk free rate.
-//! * b (f64): The cost of carry of the asset.
-//! * v (f64): The volatility of the asset.
-//! * n (usize): The number of the steps in the tree.
-//! * p (f64): The option price.
-//! * max_iterations (u64): The maximum number of iterations before a price is returned. Defaults to 20.
-//! * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
+//! European binomial
 
 use libm::{exp, log, pow, sqrt};
 
@@ -20,8 +6,24 @@ use crate::{
     distributions::binomial_coefficient::comb, fdm::FdmWithCarry, implied_volatility::solve_ivol,
 };
 
+/// Optional valuation with a European binomial implementation.
 pub struct EuropeanBinomial {}
 
+/// An implementation of a European binomial tree option pricer.
+///
+/// The following arguments are common.
+///
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * t (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry of the asset.
+/// * v (f64): The volatility of the asset.
+/// * n (usize): The number of the steps in the tree.
+/// * p (f64): The option price.
+/// * max_iterations (u64): The maximum number of iterations before a price is returned. Defaults to 20.
+/// * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
 impl EuropeanBinomial {
     /// The fair value.
     #[allow(non_snake_case)]

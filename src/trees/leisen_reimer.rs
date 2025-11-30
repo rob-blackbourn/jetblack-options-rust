@@ -1,19 +1,4 @@
-//! # Option valuations using the Leisen Reimer method.
-//!
-//! The following arguments are common.
-//!
-//! * is_european (bool): Tue for European, false for American.
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The current asset price.
-//! * K (f64): The option strike price
-//! * t (f64): The time to maturity of the option in years.
-//! * r (f64): The risk free rate.
-//! * b (f64): The cost of carry of the asset.
-//! * v (f64): The volatility of the asset.
-//! * n (usize): The number of the steps in the tree.
-//! * p (f64): The option price.
-//! * max_iterations (usize): The maximum number of iterations before a price is returned.
-//! * epsilon (f64): The largest acceptable error.
+//! Leisen Reimer binomial option pricing.
 
 use libm::{exp, fmax, log, pow, sqrt};
 
@@ -23,8 +8,23 @@ fn sqr(x: f64) -> f64 {
     x * x
 }
 
+/// Option valuations using the Leisen Reimer method.
 pub struct LeisenReimer {}
 
+/// The following arguments are common.
+///
+/// * is_european (bool): Tue for European, false for American.
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * t (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry of the asset.
+/// * v (f64): The volatility of the asset.
+/// * n (usize): The number of the steps in the tree.
+/// * p (f64): The option price.
+/// * max_iterations (usize): The maximum number of iterations before a price is returned.
+/// * epsilon (f64): The largest acceptable error.
 impl LeisenReimer {
     /// Calculate the price and some greeks using a Leisen-Reimer binomial tree.
     #[allow(non_snake_case)]
