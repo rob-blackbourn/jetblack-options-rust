@@ -15,8 +15,6 @@
 //! * max_iterations (usize): The maximum number of iterations before a price is returned.
 //! * epsilon (f64): The largest acceptable error.
 
-use libm::{exp, fmax, log, pow, sqrt};
-
 use crate::european::GeneralizedBlackScholes as BS;
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
 
@@ -34,11 +32,11 @@ impl BjerksundStensland1993 {
     #[allow(non_snake_case)]
     fn _phi(S: f64, t: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
         let lambda_ = (-r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v)) * t;
-        let d = -(log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * t) / (v * sqrt(t));
+        let d = -((S / h).ln() + (b + (gamma_ - 0.5) * (v * v)) * t) / (v * t.sqrt());
         let kappa = 2.0 * b / (v * v) + 2.0 * gamma_ - 1.0;
-        exp(lambda_)
-            * pow(S, gamma_)
-            * (cdf(d) - pow(i / S, kappa) * cdf(d - 2.0 * log(i / S) / (v * sqrt(t))))
+        f64::exp(lambda_)
+            * f64::powf(S, gamma_)
+            * (cdf(d) - (i / S).powf(kappa) * cdf(d - 2.0 * (i / S).ln() / (v * t.sqrt())))
     }
 
     #[allow(non_snake_case)]
@@ -50,16 +48,17 @@ impl BjerksundStensland1993 {
         }
 
         let beta =
-            (1.0 / 2.0 - b / (v * v)) + sqrt(sqr(b / (v * v) - 1.0 / 2.0) + 2.0 * r / (v * v));
+            (1.0 / 2.0 - b / (v * v)) + (sqr(b / (v * v) - 1.0 / 2.0) + 2.0 * r / (v * v)).sqrt();
         let b_infinity = beta / (beta - 1.0) * K;
-        let b0 = fmax(K, r / (r - b) * K);
-        let ht = -(b * t + 2.0 * v * sqrt(t)) * b0 / (b_infinity - b0);
-        let i = b0 + (b_infinity - b0) * (1.0 - exp(ht));
-        let alpha = (i - K) * pow(i, -beta);
+        let b0 = f64::max(K, r / (r - b) * K);
+        let ht = -(b * t + 2.0 * v * t.sqrt()) * b0 / (b_infinity - b0);
+        let i = b0 + (b_infinity - b0) * (1.0 - f64::exp(ht));
+        let alpha = (i - K) * f64::powf(i, -beta);
         if S >= i {
             S - K
         } else {
-            alpha * pow(S, beta) - alpha * BjerksundStensland1993::_phi(S, t, beta, i, i, r, b, v)
+            alpha * f64::powf(S, beta)
+                - alpha * BjerksundStensland1993::_phi(S, t, beta, i, i, r, b, v)
                 + BjerksundStensland1993::_phi(S, t, 1.0, i, i, r, b, v)
                 - BjerksundStensland1993::_phi(S, t, 1.0, K, i, r, b, v)
                 - K * BjerksundStensland1993::_phi(S, t, 0.0, i, i, r, b, v)

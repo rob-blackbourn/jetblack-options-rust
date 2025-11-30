@@ -15,8 +15,6 @@
 //! * max_iterations (usize): The maximum number of iterations before a price is returned.
 //! * epsilon (f64): The largest acceptable error.
 
-use libm::{exp, fmax, log, pow, sqrt};
-
 use crate::distributions::cbnd::cbnd;
 use crate::european::GeneralizedBlackScholes as BS;
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
@@ -35,17 +33,17 @@ impl BjerksundStensland2002 {
     #[allow(non_snake_case)]
     fn _phi(S: f64, t: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
         let lambda_ = (-r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v)) * t;
-        let d = -(log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * t) / (v * sqrt(t));
+        let d = -((S / h).ln() + (b + (gamma_ - 0.5) * (v * v)) * t) / (v * t.sqrt());
         let kappa = 2.0 * b / (v * v) + 2.0 * gamma_ - 1.0;
-        exp(lambda_)
-            * pow(S, gamma_)
-            * (cdf(d) - pow(i / S, kappa) * cdf(d - 2.0 * log(i / S) / (v * sqrt(t))))
+        f64::exp(lambda_)
+            * f64::powf(S, gamma_)
+            * (cdf(d) - (i / S).powf(kappa) * cdf(d - 2.0 * (i / S).ln() / (v * t.sqrt())))
     }
 
     #[allow(non_snake_case)]
     fn _ksi(
         S: f64,
-        T2: f64,
+        t2: f64,
         gamma_: f64,
         h: f64,
         I2: f64,
@@ -55,32 +53,36 @@ impl BjerksundStensland2002 {
         b: f64,
         v: f64,
     ) -> f64 {
-        let e1 = (log(S / I1) + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
-        let e2 = (log((I2 * I2) / (S * I1)) + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
-        let e3 = (log(S / I1) - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
-        let e4 = (log(I2 * I2 / (S * I1)) - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * sqrt(t1));
+        let e1 = ((S / I1).ln() + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * t1.sqrt());
+        let e2 =
+            (((I2 * I2) / (S * I1)).ln() + (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * t1.sqrt());
+        let e3 = ((S / I1).ln() - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * t1.sqrt());
+        let e4 =
+            ((I2 * I2 / (S * I1)).ln() - (b + (gamma_ - 0.5) * (v * v)) * t1) / (v * t1.sqrt());
 
-        let f1 = (log(S / h) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
-        let f2 = (log((I2 * I2) / (S * h)) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
-        let f3 = (log((I1 * I1) / (S * h)) + (b + (gamma_ - 0.5) * (v * v)) * T2) / (v * sqrt(T2));
-        let f4 = (log(S * (I1 * I1) / (h * (I2 * I2))) + (b + (gamma_ - 0.5) * (v * v)) * T2)
-            / (v * sqrt(T2));
+        let f1 = ((S / h).ln() + (b + (gamma_ - 0.5) * (v * v)) * t2) / (v * t2.sqrt());
+        let f2 =
+            (((I2 * I2) / (S * h)).ln() + (b + (gamma_ - 0.5) * (v * v)) * t2) / (v * t2.sqrt());
+        let f3 =
+            (((I1 * I1) / (S * h)).ln() + (b + (gamma_ - 0.5) * (v * v)) * t2) / (v * t2.sqrt());
+        let f4 = ((S * (I1 * I1) / (h * (I2 * I2))).ln() + (b + (gamma_ - 0.5) * (v * v)) * t2)
+            / (v * t2.sqrt());
 
-        let rho = sqrt(t1 / T2);
+        let rho = (t1 / t2).sqrt();
         let lambda_ = -r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v);
         let kappa = 2.0 * b / (v * v) + (2.0 * gamma_ - 1.0);
 
-        exp(lambda_ * T2)
-            * pow(S, gamma_)
+        (lambda_ * t2).exp()
+            * f64::powf(S, gamma_)
             * (cbnd(-e1, -f1, rho)
-                - pow(I2 / S, kappa) * cbnd(-e2, -f2, rho)
-                - pow(I1 / S, kappa) * cbnd(-e3, -f3, -rho)
-                + pow(I1 / I2, kappa) * cbnd(-e4, -f4, -rho))
+                - (I2 / S).powf(kappa) * cbnd(-e2, -f2, rho)
+                - (I1 / S).powf(kappa) * cbnd(-e3, -f3, -rho)
+                + (I1 / I2).powf(kappa) * cbnd(-e4, -f4, -rho))
     }
 
     #[allow(non_snake_case)]
     fn _call_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
-        let t1 = 1.0 / 2.0 * (sqrt(5.0) - 1.0) * t;
+        let t1 = 1.0 / 2.0 * (f64::sqrt(5.0) - 1.0) * t;
 
         if b >= r {
             // Use Black-Scholes as it is never optimal to exercise before maturity.
@@ -88,21 +90,21 @@ impl BjerksundStensland2002 {
         }
 
         let beta =
-            (1.0 / 2.0 - b / (v * v)) + sqrt(sqr(b / (v * v) - 1.0 / 2.0) + 2.0 * r / (v * v));
+            (1.0 / 2.0 - b / (v * v)) + (sqr(b / (v * v) - 1.0 / 2.0) + 2.0 * r / (v * v)).sqrt();
         let b_infinity = beta / (beta - 1.0) * K;
-        let b0 = fmax(K, r / (r - b) * K);
+        let b0 = f64::max(K, r / (r - b) * K);
 
-        let ht1 = -(b * t1 + 2.0 * v * sqrt(t1)) * (K * K) / ((b_infinity - b0) * b0);
-        let ht2 = -(b * t + 2.0 * v * sqrt(t)) * (K * K) / ((b_infinity - b0) * b0);
-        let I1 = b0 + (b_infinity - b0) * (1.0 - exp(ht1));
-        let I2 = b0 + (b_infinity - b0) * (1.0 - exp(ht2));
-        let alfa1 = (I1 - K) * pow(I1, -beta);
-        let alfa2 = (I2 - K) * pow(I2, -beta);
+        let ht1 = -(b * t1 + 2.0 * v * t1.sqrt()) * (K * K) / ((b_infinity - b0) * b0);
+        let ht2 = -(b * t + 2.0 * v * t.sqrt()) * (K * K) / ((b_infinity - b0) * b0);
+        let I1 = b0 + (b_infinity - b0) * (1.0 - f64::exp(ht1));
+        let I2 = b0 + (b_infinity - b0) * (1.0 - f64::exp(ht2));
+        let alfa1 = (I1 - K) * f64::powf(I1, -beta);
+        let alfa2 = (I2 - K) * f64::powf(I2, -beta);
 
         if S >= I2 {
             S - K
         } else {
-            return alfa2 * pow(S, beta)
+            return alfa2 * f64::powf(S, beta)
                 - alfa2 * BjerksundStensland2002::_phi(S, t1, beta, I2, I2, r, b, v)
                 + BjerksundStensland2002::_phi(S, t1, 1.0, I2, I2, r, b, v)
                 - BjerksundStensland2002::_phi(S, t1, 1.0, I1, I2, r, b, v)

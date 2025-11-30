@@ -12,8 +12,6 @@
 //! * max_iterations (usize): The maximum number of iterations before a price is returned.
 //! * epsilon (f64): The largest acceptable error.
 
-use libm::{exp, fabs, log, pow, sqrt};
-
 use crate::european::GeneralizedBlackScholes as BS;
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
 
@@ -37,28 +35,29 @@ impl BaroneAdesiWhaley {
         // Calculate the seed value Si
         let n = 2.0 * b / (v * v);
         let m = 2.0 * r / (v * v);
-        let q2u = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
+        let q2u = (-(n - 1.0) + (sqr(n - 1.0) + 4.0 * m.sqrt())) / 2.0;
         let su = K / (1.0 - 1.0 / q2u);
-        let h2 = -(b * t + 2.0 * v * sqrt(t)) * K / (su - K);
-        let mut Si = K + (su - K) * (1.0 - exp(h2));
+        let h2 = -(b * t + 2.0 * v * t.sqrt()) * K / (su - K);
+        let mut Si = K + (su - K) * (1.0 - f64::exp(h2));
 
-        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * t)));
-        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
+        let k = 2.0 * r / ((v * v) * (1.0 - (-r * t).exp()));
+        let d1 = ((Si / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let q2 = (-(n - 1.0) + (sqr(n - 1.0) + 4.0 * k).sqrt()) / 2.0;
         let mut lhs = Si - K;
         let mut rhs =
-            BS::price(true, Si, K, t, r, b, v) + (1.0 - exp((b - r) * t) * cdf(d1)) * Si / q2;
-        let mut bi = exp((b - r) * t) * cdf(d1) * (1.0 - 1.0 / q2)
-            + (1.0 - exp((b - r) * t) * cdf(d1) / (v * sqrt(t))) / q2;
+            BS::price(true, Si, K, t, r, b, v) + (1.0 - ((b - r) * t).exp() * cdf(d1)) * Si / q2;
+        let mut bi = ((b - r) * t).exp() * cdf(d1) * (1.0 - 1.0 / q2)
+            + (1.0 - ((b - r) * t).exp() * cdf(d1) / (v * t.sqrt())) / q2;
         let epsilon = 0.000001;
         // Using the Newton Raphson algorithm solve for Si
-        while fabs(lhs - rhs) / K > epsilon {
+        while f64::abs(lhs - rhs) / K > epsilon {
             Si = (K + rhs - bi * Si) / (1.0 - bi);
-            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+            let d1 = ((Si / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
             lhs = Si - K;
-            rhs = BS::price(true, Si, K, t, r, b, v) + (1.0 - exp((b - r) * t) * cdf(d1)) * Si / q2;
-            bi = exp((b - r) * t) * cdf(d1) * (1.0 - 1.0 / q2)
-                + (1.0 - exp((b - r) * t) * pdf(d1) / (v * sqrt(t))) / q2;
+            rhs = BS::price(true, Si, K, t, r, b, v)
+                + (1.0 - ((b - r) * t).exp() * cdf(d1)) * Si / q2;
+            bi = ((b - r) * t).exp() * cdf(d1) * (1.0 - 1.0 / q2)
+                + (1.0 - ((b - r) * t).exp() * pdf(d1) / (v * t.sqrt())) / q2;
         }
 
         Si
@@ -72,12 +71,12 @@ impl BaroneAdesiWhaley {
 
         let Sk = BaroneAdesiWhaley::_kc(K, t, r, b, v);
         let n = 2.0 * b / (v * v);
-        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * t)));
-        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let q2 = (-(n - 1.0) + sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-        let a2 = (Sk / q2) * (1.0 - exp((b - r) * t) * cdf(d1));
+        let k = 2.0 * r / ((v * v) * (1.0 - (-r * t).exp()));
+        let d1 = ((Sk / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let q2 = (-(n - 1.0) + (sqr(n - 1.0) + 4.0 * k).sqrt()) / 2.0;
+        let a2 = (Sk / q2) * (1.0 - ((b - r) * t).exp() * cdf(d1));
         if S < Sk {
-            BS::price(true, S, K, t, r, b, v) + a2 * pow(S / Sk, q2)
+            BS::price(true, S, K, t, r, b, v) + a2 * (S / Sk).powf(q2)
         } else {
             S - K
         }
@@ -89,29 +88,29 @@ impl BaroneAdesiWhaley {
         // Calculation of seed value, Si
         let n = 2.0 * b / (v * v);
         let m = 2.0 * r / (v * v);
-        let q1u = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * m)) / 2.0;
+        let q1u = (-(n - 1.0) - (sqr(n - 1.0) + 4.0 * m).sqrt()) / 2.0;
         let su = K / (1.0 - 1.0 / q1u);
-        let h1 = (b * t - 2.0 * v * sqrt(t)) * K / (K - su);
-        let mut Si = su + (K - su) * exp(h1);
+        let h1 = (b * t - 2.0 * v * t.sqrt()) * K / (K - su);
+        let mut Si = su + (K - su) * f64::exp(h1);
 
-        let k = 2.0 * r / (v * 2.0 * (1.0 - exp(-r * t)));
-        let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
+        let k = 2.0 * r / (v * 2.0 * (1.0 - (-r * t).exp()));
+        let d1 = ((Si / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let q1 = (-(n - 1.0) - (sqr(n - 1.0) + 4.0 * k).sqrt()) / 2.0;
         let mut lhs = K - Si;
         let mut rhs =
-            BS::price(false, Si, K, t, r, b, v) - (1.0 - exp((b - r) * t) * cdf(-d1)) * Si / q1;
-        let mut bi = -exp((b - r) * t) * cdf(-d1) * (1.0 - 1.0 / q1)
-            - (1.0 + exp((b - r) * t) * pdf(-d1) / (v * sqrt(t))) / q1;
+            BS::price(false, Si, K, t, r, b, v) - (1.0 - ((b - r) * t).exp() * cdf(-d1)) * Si / q1;
+        let mut bi = -((b - r) * t).exp() * cdf(-d1) * (1.0 - 1.0 / q1)
+            - (1.0 + ((b - r) * t).exp() * pdf(-d1) / (v * t.sqrt())) / q1;
         let epsilon = 0.000001;
         // Using the Newton Raphson algorithm, solve for Si.
-        while fabs(lhs - rhs) / K > epsilon {
+        while f64::abs(lhs - rhs) / K > epsilon {
             Si = (K - rhs + bi * Si) / (1.0 + bi);
-            let d1 = (log(Si / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
+            let d1 = ((Si / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
             lhs = K - Si;
-            rhs =
-                BS::price(false, Si, K, t, r, b, v) - (1.0 - exp((b - r) * t) * cdf(-d1)) * Si / q1;
-            bi = -exp((b - r) * t) * cdf(-d1) * (1.0 - 1.0 / q1)
-                - (1.0 + exp((b - r) * t) * cdf(-d1) / (v * sqrt(t))) / q1;
+            rhs = BS::price(false, Si, K, t, r, b, v)
+                - (1.0 - ((b - r) * t).exp() * cdf(-d1)) * Si / q1;
+            bi = -((b - r) * t).exp() * cdf(-d1) * (1.0 - 1.0 / q1)
+                - (1.0 + ((b - r) * t).exp() * cdf(-d1) / (v * t.sqrt())) / q1;
         }
 
         Si
@@ -121,13 +120,13 @@ impl BaroneAdesiWhaley {
     fn _put_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         let Sk = BaroneAdesiWhaley::_kp(K, t, r, b, v);
         let n = 2.0 * b / (v * v);
-        let k = 2.0 * r / ((v * v) * (1.0 - exp(-r * t)));
-        let d1 = (log(Sk / K) + (b + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let q1 = (-(n - 1.0) - sqrt(sqr(n - 1.0) + 4.0 * k)) / 2.0;
-        let a1 = -(Sk / q1) * (1.0 - exp((b - r) * t) * cdf(-d1));
+        let k = 2.0 * r / ((v * v) * (1.0 - (-r * t).exp()));
+        let d1 = ((Sk / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let q1 = (-(n - 1.0) - (sqr(n - 1.0) + 4.0 * k).sqrt()) / 2.0;
+        let a1 = -(Sk / q1) * (1.0 - ((b - r) * t).exp() * cdf(-d1));
 
         if S > Sk {
-            BS::price(false, S, K, t, r, b, v) + a1 * pow(S / Sk, q1)
+            BS::price(false, S, K, t, r, b, v) + a1 * (S / Sk).powf(q1)
         } else {
             K - S
         }
@@ -200,7 +199,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                11.087510335081676,
+                11.087510414723946,
             ),
             (
                 false,
@@ -210,7 +209,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.510639694796271,
+                0.51063969479627103,
             ),
             (
                 true,
@@ -220,7 +219,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                3.8736244925135566,
+                3.8736245107976992,
             ),
             (
                 false,
@@ -230,7 +229,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                2.938715732901822,
+                2.938715732901815,
             ),
             (
                 true,
@@ -240,7 +239,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.7892100659783038,
+                0.78921007059571513,
             ),
             (
                 false,
@@ -250,7 +249,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                9.484654220828427,
+                9.4846542208284265,
             ),
         ] {
             let b = r - q;
@@ -276,7 +275,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.8592614442108903,
+                0.85926145538914866,
             ),
             (
                 false,
@@ -286,7 +285,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.10482043749096559,
+                -0.10482043749123204,
             ),
             (
                 true,
@@ -296,7 +295,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.541088570403403,
+                0.54108857322596737,
             ),
             (
                 false,
@@ -306,7 +305,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.42462427819012216,
+                -0.42462427818941162,
             ),
             (
                 true,
@@ -316,7 +315,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.17169091749034138,
+                0.17169091820287696,
             ),
             (
                 false,
@@ -326,7 +325,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.813090973112196,
+                -0.81309097311139666,
             ),
         ] {
             let b = r - q;
@@ -352,7 +351,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.01870512376100919,
+                0.018705125359730346,
             ),
             (
                 false,
@@ -362,7 +361,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.01850032019357073,
+                0.018500320192460507,
             ),
             (
                 true,
@@ -372,7 +371,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.042923920551274364,
+                0.042923920955395545,
             ),
             (
                 false,
@@ -382,7 +381,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.04360354515231535,
+                0.043603545223369622,
             ),
             (
                 true,
@@ -392,7 +391,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.028399659561806345,
+                0.028399659594002813,
             ),
             (
                 false,
@@ -402,7 +401,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.03266594122308675,
+                0.032665941223086747,
             ),
         ] {
             let b = r - q;
@@ -428,7 +427,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.6059936396929517,
+                -2.6059937555985346,
             ),
             (
                 false,
@@ -448,7 +447,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -4.067355373044116,
+                -4.0673554271468033,
             ),
             (
                 false,
@@ -458,7 +457,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.284344775164011,
+                -2.2843447751640111,
             ),
             (
                 true,
@@ -468,7 +467,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.48956425165973,
+                -2.4895642722656457,
             ),
             (
                 false,
@@ -505,7 +504,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                14.2656452419061,
+                14.265653647129284,
             ),
             (
                 false,
@@ -525,7 +524,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                26.89826727142619,
+                26.898269393325958,
             ),
             (
                 false,
@@ -545,7 +544,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                17.77822568607357,
+                17.778226270531494,
             ),
             (
                 false,
@@ -581,7 +580,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                39.274542330740125,
+                39.274484237934892,
             ),
             (
                 false,
@@ -591,7 +590,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -5.709938455815355,
+                -5.7099384558153554,
             ),
             (
                 true,
@@ -601,7 +600,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                24.580558678367613,
+                24.580545464512713,
             ),
             (
                 false,
@@ -621,7 +620,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                8.060271439361,
+                8.0602681333376562,
             ),
             (
                 false,
@@ -631,7 +630,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -34.82234069684775,
+                -34.822340696855747,
             ),
         ] {
             let b = r - q;
