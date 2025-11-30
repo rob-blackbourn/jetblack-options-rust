@@ -1,5 +1,3 @@
-use libm::fabs;
-
 /// Calculate the volatility of an option that is implied by the price.
 ///
 /// Args:
@@ -24,7 +22,7 @@ pub fn solve_ivol(
     let mut n = 0;
     let mut v = v_lo + (p - p_lo) * (v_hi - v_lo) / (p_hi - p_lo);
     let mut p1 = price(v);
-    while fabs(p - p1) > epsilon && n < max_iterations {
+    while (p - p1).abs() > epsilon && n < max_iterations {
         n += 1;
 
         if p1 < p {

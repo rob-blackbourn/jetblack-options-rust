@@ -111,14 +111,12 @@ impl BjerksundStensland1993 {
 mod tests {
     use std::collections::HashMap;
 
-    use libm::fabs;
-
     use crate::fdm::DifferenceMethod;
 
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
-        let diff = fabs(actual - expected);
+        let diff = (actual - expected).abs();
         diff < threshold
     }
 

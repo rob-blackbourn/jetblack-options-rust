@@ -131,15 +131,11 @@ pub fn inv_cdf(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use core::f64;
-
-    use libm::fabs;
-
     use super::super::cdf::cdf;
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
-        let diff = fabs(actual - expected);
+        let diff = (actual - expected).abs();
         diff < threshold
     }
 

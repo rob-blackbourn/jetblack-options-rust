@@ -164,14 +164,12 @@ impl BjerksundStensland2002 {
 mod tests {
     use std::collections::HashMap;
 
-    use libm::fabs;
-
     use crate::fdm::DifferenceMethod;
 
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
-        let diff = fabs(actual - expected);
+        let diff = (actual - expected).abs();
         diff < threshold
     }
 
@@ -407,7 +405,7 @@ mod tests {
         ] {
             let b = r - q;
             let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
-            let diff = fabs(expected - numeric);
+            let diff = (expected - numeric).abs();
             assert!(
                 diff < threshold,
                 "[{}].gammma({}, {}, {}, {}, {}, {})",
@@ -502,7 +500,7 @@ mod tests {
             let numeric =
                 ng[&is_call].theta(S, K, t, r, b, v, 1.0 / 365.0, DifferenceMethod::Central);
             assert!(
-                fabs(expected - numeric) < threshold,
+                (expected - numeric).abs() < threshold,
                 "[{}]theta({}, {}, {}, {}, {}, {})",
                 is_call,
                 S,

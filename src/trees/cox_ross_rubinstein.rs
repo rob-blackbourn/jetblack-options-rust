@@ -127,14 +127,12 @@ impl CoxRossRubinstein {
 mod tests {
     use std::collections::HashMap;
 
-    use libm::fabs;
-
     use crate::fdm::DifferenceMethod;
 
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
-        let diff = fabs(actual - expected);
+        let diff = (actual - expected).abs();
         diff < threshold
     }
 
@@ -492,7 +490,7 @@ mod tests {
             let b = r - q;
             let actual =
                 ng[&is_european][&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
-            let diff = fabs(expected - actual);
+            let diff = (expected - actual).abs();
             assert!(
                 diff < threshold,
                 "[{}][{}].gamma({}, {}, {}, {}, {}, {})",
@@ -830,7 +828,7 @@ mod tests {
             let b = r - q;
             let actual =
                 ng[&is_european][&is_call].rho(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
-            let diff = fabs(expected - actual);
+            let diff = (expected - actual).abs();
             assert!(
                 diff < threshold,
                 "[{}][{}].rho({}, {}, {}, {}, {}, {})",
