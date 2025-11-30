@@ -24,19 +24,6 @@
 //! $$
 //! \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
 //! $$
-//!
-//! The following arguments has common meanings.
-//!
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The current asset price.
-//! * K (f64): The option strike price
-//! * T (f64): The time to maturity of the option in years.
-//! * r (f64): The risk free rate.
-//! * q (f64): The dividend yield.
-//! * v (f64): The volatility of the asset.
-//! * max_iterations (usize): The maximum number of iterations before a price is returned. Defaults to 20.
-//! * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
-//!
 
 use core::f64;
 
@@ -52,6 +39,17 @@ fn pdf(x: f64) -> f64 {
     crate::distributions::pdf(x, 0.0, 1.0)
 }
 
+/// The following arguments have common meanings.
+///
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * T (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * q (f64): The dividend yield.
+/// * v (f64): The volatility of the asset.
+/// * max_iterations (usize): The maximum number of iterations before a price is returned. Defaults to 20.
+/// * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
 pub struct BlackScholesMerton {}
 
 impl BlackScholesMerton {
