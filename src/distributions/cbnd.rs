@@ -2,7 +2,7 @@
 
 use core::f64::consts::PI;
 
-use libm::{asin, exp, fabs, fmax, sin, sqrt};
+use libm::{asin, exp, sin, sqrt};
 
 use super::cnd::CND;
 
@@ -78,9 +78,9 @@ const F10: Factor = Factor {
 /// This code was originally translated into VBA by Graeme West
 #[allow(non_snake_case)]
 pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
-    let Factor { W, XX } = if fabs(rho) < 0.3 {
+    let Factor { W, XX } = if rho.abs() < 0.3 {
         &F3
-    } else if fabs(rho) < 0.75 {
+    } else if rho.abs() < 0.75 {
         &F6
     } else {
         &F10
@@ -91,8 +91,8 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
     let mut hk = h * k;
     let mut BVN = 0.0;
 
-    if fabs(rho) < 0.925 {
-        if fabs(rho) > 0.0 {
+    if rho.abs() < 0.925 {
+        if rho.abs() > 0.0 {
             let hs = (h * h + k * k) / 2.0;
             let asr = asin(rho);
             for i in 0..W.len() {
@@ -109,7 +109,7 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
             k = -k;
             hk = -hk;
         }
-        if fabs(rho) < 1.0 {
+        if rho.abs() < 1.0 {
             let Ass = (1.0 - rho) * (1.0 + rho);
             let A = sqrt(Ass);
             let bs = (h - k) * (h - k);
@@ -148,7 +148,7 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
             BVN = -BVN / (2.0 * PI);
         }
         if rho > 0.0 {
-            BVN = BVN + CND(-fmax(h, k));
+            BVN = BVN + CND(-f64::max(h, k));
         } else {
             BVN = -BVN;
             if k > h {
@@ -162,12 +162,10 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use libm::fabs;
-
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
-        let diff = fabs(actual - expected);
+        let diff = f64::abs(actual - expected);
         diff < threshold
     }
 
