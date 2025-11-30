@@ -13,44 +13,12 @@ This library provides two things:
 - Valuation functions for options and other volatility products
 - A bumping framework to calculate sensitivities from prices
 
-## Coverage
-
-### European
-
-* Black 76
-* Black-Scholes 73
-* Black-Scholes-Merton
-* Garman Kohlhagen
-* Generalize Black-Scholes
-
-### American
-
-* Barone, Adesi and Whaley (1987)
-* Bjerksund and Stensland (1993)
-* Bjerksund and Stensland (2002)
-
-### Trees
-
-* Cox, Ross & Rubinstein
-* European Binomial
-* Jarrow-Rudd
-* Leisen Reimer
-* Trinomial
-
-### Bumping (Finite Difference Methods)
-
-* With Carry
-* Without Carry
-* With Dividend Yield
-
-
 ## Examples
 
 Some calculations with Black-Scholes-Merton.
 
 ```rust
 use jetblack_options::european::BlackScholesMerton;
-use jetblack_options::fdm::DifferenceMethod;
 
 #[allow(non_snake_case)]
 fn main() {
@@ -121,3 +89,33 @@ fn main() {
     println!("The price at 29 days is {}", p1);
 }
 ```
+
+## Coverage
+
+### European
+
+* Black 76
+* Black-Scholes 73
+* Black-Scholes-Merton
+* Garman Kohlhagen
+* Generalize Black-Scholes
+
+### American
+
+* Barone, Adesi and Whaley (1987)
+* Bjerksund and Stensland (1993)
+* Bjerksund and Stensland (2002)
+
+### Trees
+
+* Cox, Ross & Rubinstein
+* European Binomial
+* Jarrow-Rudd
+* Leisen Reimer
+* Trinomial
+
+### Bumping (Finite Difference Methods)
+
+* With Carry
+* Without Carry
+* With Dividend Yield
