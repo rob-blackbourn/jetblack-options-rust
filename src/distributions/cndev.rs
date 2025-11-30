@@ -1,5 +1,3 @@
-use libm::{fabs, log};
-
 /// Inverse cumulative normal distribution function
 #[allow(non_snake_case, non_upper_case_globals, dead_code)]
 pub fn cndev(U: f64) -> f64 {
@@ -28,7 +26,7 @@ pub fn cndev(U: f64) -> f64 {
     ];
 
     let x = U - 0.5;
-    if fabs(x) < 0.92 {
+    if x.abs() < 0.92 {
         let r = x * x;
         let r = x * (((A[3] * r + A[2]) * r + A[1]) * r + A[0])
             / ((((b[3] * r + b[2]) * r + b[1]) * r + b[0]) * r + 1.0);
@@ -36,7 +34,7 @@ pub fn cndev(U: f64) -> f64 {
     }
 
     let r = if x < 0.0 { U } else { 1.0 - U };
-    let r = log(-log(r));
+    let r = (-r.ln()).ln();
     let r = c[0]
         + r * (c[1]
             + r * (c[2]

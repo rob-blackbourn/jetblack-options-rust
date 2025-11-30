@@ -1,7 +1,5 @@
 use core::f64::consts::TAU;
 
-use libm::{exp, sqrt};
-
 /// Probability density function.  P(x <= X < x+dx) / dx
 pub fn pdf(x: f64, mu: f64, sigma: f64) -> f64 {
     if sigma < 0.0 {
@@ -15,5 +13,5 @@ pub fn pdf(x: f64, mu: f64, sigma: f64) -> f64 {
 
     let diff = x - mu;
 
-    exp(diff * diff / (-2.0 * variance)) / sqrt(TAU * variance)
+    (diff * diff / (-2.0 * variance)).exp() / (TAU * variance).sqrt()
 }

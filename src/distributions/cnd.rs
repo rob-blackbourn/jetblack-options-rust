@@ -1,15 +1,13 @@
-use libm::{exp, fabs};
-
 /// Cumulative double precision algorithm based on Hart 1968
 /// Based on implementation by Graeme West
 #[allow(non_snake_case)]
 pub fn CND(x: f64) -> f64 {
-    let y = fabs(x);
+    let y = x.abs();
     if y > 37.0 {
         return 0.0;
     }
 
-    let e = exp(-(y * y) / 2.0);
+    let e = (-(y * y) / 2.0).exp();
     let c = if y < 7.07106781186547 {
         let a = 3.52624965998911E-02 * y + 0.700383064443688;
         let a = a * y + 6.37396220353165;

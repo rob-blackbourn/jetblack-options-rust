@@ -1,8 +1,6 @@
 //! The cumulative bivariate normal distribution function
 
-use core::f64::consts::PI;
-
-use libm::{asin, exp, sin, sqrt};
+use std::f64::consts::PI;
 
 use super::cnd::CND;
 
@@ -94,11 +92,11 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
     if rho.abs() < 0.925 {
         if rho.abs() > 0.0 {
             let hs = (h * h + k * k) / 2.0;
-            let asr = asin(rho);
+            let asr = rho.asin();
             for i in 0..W.len() {
                 for ISs in [-1.0, 1.0] {
-                    let sn = sin(asr * (ISs * XX[i] + 1.0) / 2.0);
-                    BVN = BVN + W[i] * exp((sn * hk - hs) / (1.0 - sn * sn));
+                    let sn = (asr * (ISs * XX[i] + 1.0) / 2.0).sin();
+                    BVN = BVN + W[i] * ((sn * hk - hs) / (1.0 - sn * sn)).exp();
                 }
             }
             BVN = BVN * asr / (4.0 * PI);
@@ -111,21 +109,21 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
         }
         if rho.abs() < 1.0 {
             let Ass = (1.0 - rho) * (1.0 + rho);
-            let A = sqrt(Ass);
+            let A = Ass.sqrt();
             let bs = (h - k) * (h - k);
             let c = (4.0 - hk) / 8.0;
             let d = (12.0 - hk) / 16.0;
             let asr = -(bs / Ass + hk) / 2.0;
             if asr > -100.0 {
                 BVN = A
-                    * exp(asr)
+                    * asr.exp()
                     * (1.0 - c * (bs - Ass) * (1.0 - d * bs / 5.0) / 3.0 + c * d * Ass * Ass / 5.0);
             }
             if -hk < 100.0 {
-                let b = sqrt(bs);
+                let b = bs.sqrt();
                 BVN = BVN
-                    - exp(-hk / 2.0)
-                        * sqrt(2.0 * PI)
+                    - (-hk / 2.0).exp()
+                        * (2.0 * PI).sqrt()
                         * CND(-b / A)
                         * b
                         * (1.0 - c * bs * (1.0 - d * bs / 5.0) / 3.0);
@@ -134,13 +132,13 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
             for i in 0..W.len() {
                 for ISs in [-1.0, 1.0] {
                     let xs = sqr(A * (ISs * XX[i] + 1.0));
-                    let rs = sqrt(1.0 - xs);
+                    let rs = (1.0 - xs).sqrt();
                     let asr = -(bs / xs + hk) / 2.0;
                     if asr > -100.0 {
                         BVN = BVN
                             + A * W[i]
-                                * exp(asr)
-                                * (exp(-hk * (1.0 - rs) / (2.0 * (1.0 + rs))) / rs
+                                * asr.exp()
+                                * ((-hk * (1.0 - rs) / (2.0 * (1.0 + rs))).exp() / rs
                                     - (1.0 + c * xs * (1.0 + d * xs)));
                     }
                 }

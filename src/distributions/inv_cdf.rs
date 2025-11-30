@@ -1,7 +1,5 @@
 use core::f64;
 
-use libm::{fabs, log, sqrt};
-
 fn r8poly_value(n: usize, a: &[f64], x: f64) -> f64 {
     let mut value = 0.0;
 
@@ -99,7 +97,7 @@ fn r8_normal_01_cdf_inverse(p: f64) -> f64 {
 
     let q = p - 0.5;
 
-    if fabs(q) <= SPLIT1 {
+    if q.abs() <= SPLIT1 {
         let r = CONST1 - q * q;
         return q * r8poly_value(8, &A, r) / r8poly_value(8, &B, r);
     } else {
@@ -109,7 +107,7 @@ fn r8_normal_01_cdf_inverse(p: f64) -> f64 {
             return f64::NAN;
         }
 
-        r = sqrt(-log(r));
+        r = (-r.ln()).sqrt();
 
         let mut value = if r <= SPLIT2 {
             r = r - CONST2;

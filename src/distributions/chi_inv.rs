@@ -6,8 +6,6 @@
 //! Max. error of approximation is 3%
 //! See: (<https://apps.dtic.mil/sti/pdfs/ADA515532.pdf>)
 
-use libm::{exp, fmin, log, pow, sqrt};
-
 #[allow(non_snake_case, dead_code)]
 pub fn chi_inv(p: f64, df: i32) -> f64 {
     let p = 1.0 - p;
@@ -29,7 +27,7 @@ pub fn chi_inv(p: f64, df: i32) -> f64 {
         let mut u = 0.0;
         for _ in 0..8 {
             let g = 1.0 + (u / (a + 1.0)) * (1.0 + (u / (a + 2.0)) * (1.0 + (u / (a + 3.0))));
-            u = pow(A * exp(u) / g, 1.0 / a);
+            u = (A * u.exp() / g).powf(1.0 / a);
         }
         let x = 2.0 * u;
         x
@@ -39,8 +37,8 @@ pub fn chi_inv(p: f64, df: i32) -> f64 {
         let b1 = 0.99229;
         let b2 = 0.04481;
 
-        let p1 = fmin(p, 1.0 - p);
-        let t = sqrt(-2.0 * log(p1));
+        let p1 = f64::min(p, 1.0 - p);
+        let t = (-2.0 * p1.ln()).sqrt();
         let X = t - (a0 + a1 * t) / (1.0 + b1 * t + b2 * t * t);
         let s = if p - 0.5 < 0.0 {
             -1.0
@@ -51,7 +49,7 @@ pub fn chi_inv(p: f64, df: i32) -> f64 {
         };
         let df = df as f64;
         let b = 2.0 / (9.0 * df);
-        let x = df * pow(1.0 - b + s * X * sqrt(b), 3.0);
+        let x = df * (1.0 - b + s * X * b.sqrt()).powi(3);
         x
     }
 }
