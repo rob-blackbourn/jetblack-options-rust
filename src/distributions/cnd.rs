@@ -34,3 +34,36 @@ pub fn CND(x: f64) -> f64 {
 
     if x > 0.0 { 1.0 - c } else { c }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_should_calc_cdf() {
+        for (x, expected, threshold) in [
+            (0.0, 0.5, 1e-12),
+            (0.1, 0.539827837277029, 1e-12),
+            (0.2, 0.579259709439103, 1e-12),
+            (0.3, 0.6179114221889526, 1e-12),
+            (0.4, 0.6554217416103242, 1e-12),
+            (0.5, 0.6914624612740131, 1e-12),
+            (0.6, 0.7257468822499265, 1e-12),
+            (0.7, 0.758036347776927, 1e-12),
+            (0.8, 0.7881446014166034, 1e-12),
+            (0.9, 0.8159398746532405, 1e-12),
+            (1.0, 0.8413447460685429, 1e-12),
+        ] {
+            let actual = CND(x);
+            assert!(
+                (expected - actual).abs() <= threshold,
+                "cdf({}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                x,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            )
+        }
+    }
+}
