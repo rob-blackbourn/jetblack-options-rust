@@ -23,8 +23,6 @@
 //!       a price is returned.
 //! * epsilon (f64): The largest acceptable error.
 
-use libm::{exp, log, sqrt};
-
 use crate::{fdm::FdmWithoutCarry, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
@@ -48,12 +46,12 @@ impl BlackScholes73 {
     /// $$
     #[allow(non_snake_case)]
     pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         if is_call {
-            S * cdf(d1) - K * exp(-r * t) * cdf(d2)
+            S * cdf(d1) - K * (-r * t).exp() * cdf(d2)
         } else {
-            K * exp(-r * t) * cdf(-d2) - S * cdf(-d1)
+            K * (-r * t).exp() * cdf(-d2) - S * cdf(-d1)
         }
     }
 
@@ -94,74 +92,74 @@ impl BlackScholes73 {
     /// The sensitivity to the underlying price.
     #[allow(non_snake_case)]
     pub fn delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
         if is_call { cdf(d1) } else { -cdf(-d1) }
     }
 
     /// Calculates option gamma
     #[allow(non_snake_case)]
     pub fn gamma(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
-        pdf(d1) / (S * v * sqrt(t))
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
+        pdf(d1) / (S * v * t.sqrt())
     }
 
     /// The sensitivity to time.
     #[allow(non_snake_case)]
     pub fn theta(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         if is_call {
-            -((S * pdf(d1) * v) / (2.0 * sqrt(t))) - r * K * exp(-r * t) * cdf(d2)
+            -((S * pdf(d1) * v) / (2.0 * t.sqrt())) - r * K * (-r * t).exp() * cdf(d2)
         } else {
-            -((S * pdf(d1) * v) / (2.0 * sqrt(t))) + r * K * exp(-r * t) * cdf(-d2)
+            -((S * pdf(d1) * v) / (2.0 * t.sqrt())) + r * K * (-r * t).exp() * cdf(-d2)
         }
     }
 
     #[allow(non_snake_case)]
     pub fn vega(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
-        S * sqrt(t) * pdf(d1)
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
+        S * t.sqrt() * pdf(d1)
     }
 
     #[allow(non_snake_case)]
     pub fn rho(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         if is_call {
-            K * t * exp(-r * t) * cdf(d2)
+            K * t * (-r * t).exp() * cdf(d2)
         } else {
-            -K * t * exp(-r * t) * cdf(-d2)
+            -K * t * (-r * t).exp() * cdf(-d2)
         }
     }
 
     /// The ratio of change in delta to the change in volatility.
     #[allow(non_snake_case)]
     pub fn vanna(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + v * v / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (r + v * v / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         -d2 * pdf(d1) / v
     }
 
     /// The rate at which the delta of an option or warrant changes with respect to time.
     #[allow(non_snake_case)]
     pub fn charm(is_call: bool, S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         if is_call {
-            -pdf(d1) * (r / (v * sqrt(t)) - d2 / (2.0 * t))
+            -pdf(d1) * (r / (v * t.sqrt()) - d2 / (2.0 * t))
         } else {
-            -pdf(d1) * (r / (v * sqrt(t)) - d2 / (2.0 * t))
+            -pdf(d1) * (r / (v * t.sqrt()) - d2 / (2.0 * t))
         }
     }
 
     /// The rate at which the vega of an option will react to volatility in the market.
     #[allow(non_snake_case)]
     pub fn vomma(S: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (r + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholes73::vega(S, K, t, r, v) * d1 * d2 / v
     }
 }

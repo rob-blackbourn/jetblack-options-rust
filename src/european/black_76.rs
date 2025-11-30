@@ -5,17 +5,17 @@
 //! * Strike price $ K $,
 //! * Risk-free rate $ r $,
 //! * Annual dividend yield $ q $,
-//! * Time to maturity $ \tau = T - t $
+//! * Time to maturity $ \tau = t - t $
 //! * Volatility $ \sigma $.
 //!
 //! Most of the formula use one or both of the following terms.
 //!
 //! $$
-//! d_1 = \frac{\ln(F/K) + (\sigma^2/2)T}{\sigma\sqrt{T}}
+//! d_1 = \frac{\ln(F/K) + (\sigma^2/2)t}{\sigma\sqrt{t}}
 //! $$
 //!
 //! $$
-//! d_2 = \frac{\ln(F/K) - (\sigma^2/2)T}{\sigma\sqrt{T}} = d_1 - \sigma\sqrt{T}
+//! d_2 = \frac{\ln(F/K) - (\sigma^2/2)t}{\sigma\sqrt{t}} = d_1 - \sigma\sqrt{t}
 //! $$
 //!
 //! $$
@@ -31,13 +31,11 @@
 //! * is_call (bool): True for a call, false for a put.
 //! * F (f64): The price of the future.
 //! * K (f64): The strike price.
-//! * T (f64): The time to expiry in years.
+//! * t (f64): The time to expiry in years.
 //! * r (f64): The risk free rate.
 //! * v (f64): The asset volatility.
 //! * max_iterations (usize): The maximum number of iterations before a price is returned.
 //! * epsilon (f64): The largest acceptable error.
-
-use libm::{exp, log, sqrt};
 
 use crate::{fdm::FdmWithoutCarry, implied_volatility::solve_ivol};
 
@@ -65,14 +63,14 @@ impl Black76 {
     /// P = e^{-r \tau} [K\Phi(-d_2) -  F\Phi(-d_1)]
     /// $$
     #[allow(non_snake_case)]
-    pub fn price(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn price(is_call: bool, F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + ((v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         if is_call {
-            exp(-r * T) * (F * cdf(d1) - K * cdf(d2))
+            (-r * t).exp() * (F * cdf(d1) - K * cdf(d2))
         } else {
-            exp(-r * T) * (K * cdf(-d2) - F * cdf(-d1))
+            (-r * t).exp() * (K * cdf(-d2) - F * cdf(-d1))
         }
     }
 
@@ -82,7 +80,7 @@ impl Black76 {
         is_call: bool,
         F: f64,
         K: f64,
-        T: f64,
+        t: f64,
         r: f64,
         p: f64,
         max_iterations: usize,
@@ -90,7 +88,7 @@ impl Black76 {
     ) -> f64 {
         solve_ivol(
             p,
-            |v| Black76::price(is_call, F, K, T, r, v),
+            |v| Black76::price(is_call, F, K, t, r, v),
             max_iterations,
             epsilon,
         )
@@ -99,8 +97,8 @@ impl Black76 {
     /// Return a struct to calculate greeks numerically using finite difference methods.
     pub fn fdm_greeks(is_call: bool) -> FdmWithoutCarry {
         #[allow(non_snake_case)]
-        FdmWithoutCarry::new(move |S: f64, K: f64, T: f64, r: f64, b: f64| {
-            Black76::price(is_call, S, K, T, r, b)
+        FdmWithoutCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64| {
+            Black76::price(is_call, S, K, t, r, b)
         })
     }
 
@@ -119,12 +117,12 @@ impl Black76 {
     /// \frac{\partial P}{\partial S} = -e^{-r \tau} \Phi(-d_1)
     /// $$
     #[allow(non_snake_case)]
-    pub fn delta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
+    pub fn delta(is_call: bool, F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + t * ((v * v) / 2.0)) / (v * t.sqrt());
         if is_call {
-            return exp(-r * T) * cdf(d1);
+            return (-r * t).exp() * cdf(d1);
         } else {
-            return -exp(-r * T) * cdf(-d1);
+            return -(-r * t).exp() * cdf(-d1);
         }
     }
 
@@ -136,10 +134,10 @@ impl Black76 {
     /// \frac{\partial^2 V}{\partial S^2} = e^{-r \tau} \frac{\varphi(d_1)}{F\sigma\sqrt{\tau}} = K e^{-r \tau} \frac{\varphi(d_2)}{F^2\sigma\sqrt{\tau}}
     /// $$
     #[allow(non_snake_case)]
-    pub fn gamma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
+    pub fn gamma(F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + t * ((v * v) / 2.0)) / (v * t.sqrt());
 
-        exp(-r * T) * pdf(d1) / (F * v * sqrt(T))
+        (-r * t).exp() * pdf(d1) / (F * v * t.sqrt())
     }
 
     /// The change in the value of the option with respect to time to expiry
@@ -148,25 +146,25 @@ impl Black76 {
     /// For the call.
     ///
     /// $$
-    /// \frac{\partial C}{\partial T} - \frac{F e^{-r \tau} \varphi(d_1) \sigma}{2 \sqrt{\tau}} - rKe^{-r \tau}\Phi(d_2) + rFe^{-r \tau}\Phi(d_1)
+    /// \frac{\partial C}{\partial t} - \frac{F e^{-r \tau} \varphi(d_1) \sigma}{2 \sqrt{\tau}} - rKe^{-r \tau}\Phi(d_2) + rFe^{-r \tau}\Phi(d_1)
     /// $$
     ///
     /// For the put.
     ///
     /// $$
-    /// \frac{\partial P}{\partial T} - \frac{F e^{-r \tau} \varphi(d_1) \sigma}{2 \sqrt{\tau}} + rKe^{-r \tau}\Phi(-d_2) - rFe^{-r \tau}\Phi(-d_1)
+    /// \frac{\partial P}{\partial t} - \frac{F e^{-r \tau} \varphi(d_1) \sigma}{2 \sqrt{\tau}} + rKe^{-r \tau}\Phi(-d_2) - rFe^{-r \tau}\Phi(-d_1)
     /// $$
     #[allow(non_snake_case)]
-    pub fn theta(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn theta(is_call: bool, F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + ((v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         if is_call {
-            -F * exp(-r * T) * pdf(d1) * v / (2.0 * sqrt(T)) + r * F * exp(-r * T) * cdf(d1)
-                - r * K * exp(-r * T) * cdf(d2)
+            -F * (-r * t).exp() * pdf(d1) * v / (2.0 * t.sqrt()) + r * F * (-r * t).exp() * cdf(d1)
+                - r * K * (-r * t).exp() * cdf(d2)
         } else {
-            -F * exp(-r * T) * pdf(d1) * v / (2.0 * sqrt(T)) - r * F * exp(-r * T) * cdf(-d1)
-                + r * K * exp(-r * T) * cdf(-d2)
+            -F * (-r * t).exp() * pdf(d1) * v / (2.0 * t.sqrt()) - r * F * (-r * t).exp() * cdf(-d1)
+                + r * K * (-r * t).exp() * cdf(-d2)
         }
     }
 
@@ -179,10 +177,10 @@ impl Black76 {
     /// \frac{\partial V}{\partial \sigma} = F e^{-r \tau} \varphi(d_1) \sqrt{\tau} = K e^{-r \tau} \varphi(d_2) \sqrt{\tau}
     /// $$
     #[allow(non_snake_case)]
-    pub fn vega(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
+    pub fn vega(F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + ((v * v) / 2.0) * t) / (v * t.sqrt());
 
-        F * exp(-r * T) * pdf(d1) * sqrt(T)
+        F * (-r * t).exp() * pdf(d1) * t.sqrt()
     }
 
     /// The sensitivity of the option price to a change in the risk free rate
@@ -200,13 +198,13 @@ impl Black76 {
     /// \frac{\partial P}{\partial r} = -\tau e^{-r \tau} [K\Phi(-d_2) -  F\Phi(-d_1)]
     /// $$
     #[allow(non_snake_case)]
-    pub fn rho(is_call: bool, F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + (v * v / 2.0) * T) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn rho(is_call: bool, F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + ((v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         if is_call {
-            -T * exp(-r * T) * (F * cdf(d1) - K * cdf(d2))
+            -t * (-r * t).exp() * (F * cdf(d1) - K * cdf(d2))
         } else {
-            -T * exp(-r * T) * (K * cdf(-d2) - F * cdf(-d1))
+            -t * (-r * t).exp() * (K * cdf(-d2) - F * cdf(-d1))
         }
     }
 
@@ -219,11 +217,11 @@ impl Black76 {
     /// \frac{\partial^2 V}{\partial F \partial \sigma} = -e^{-r \tau} \varphi(d_1) \frac{d_2}{\sigma} \, = \frac{\mathcal{V}}{F}\left[1 - \frac{d_1}{\sigma\sqrt{\tau}} \right]
     /// $$
     #[allow(non_snake_case)]
-    pub fn vanna(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn vanna(F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + t * ((v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
-        -exp(-r * T) * pdf(d1) * d2 / v
+        -(-r * t).exp() * pdf(d1) * d2 / v
     }
 
     /// The second order sensitivity to volatility.
@@ -234,11 +232,11 @@ impl Black76 {
     /// \frac{\partial^2 V}{\partial \sigma^2} = F e^{-r \tau} \varphi(d_1) \sqrt{\tau} \frac{d_1 d_2}{\sigma} = \mathcal{V}  \frac{d_1 d_2}{\sigma}
     /// $$
     #[allow(non_snake_case)]
-    pub fn vomma(F: f64, K: f64, T: f64, r: f64, v: f64) -> f64 {
-        let d1 = (log(F / K) + T * (v * v / 2.0)) / (v * sqrt(T));
-        let d2 = d1 - v * sqrt(T);
+    pub fn vomma(F: f64, K: f64, t: f64, r: f64, v: f64) -> f64 {
+        let d1 = ((F / K).ln() + t * ((v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
-        F * exp(-r * T) * pdf(d1) * sqrt(T) * d1 * d2 / v
+        F * (-r * t).exp() * pdf(d1) * t.sqrt() * d1 * d2 / v
     }
 }
 
@@ -259,7 +257,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, F, K, T, r, v, expected) in [
+        for (is_call, F, K, t, r, v, expected) in [
             (
                 true,
                 110.0,
@@ -315,7 +313,7 @@ mod tests {
                 10.143390791460105,
             ),
         ] {
-            let actual = Black76::price(is_call, F, K, T, r, v);
+            let actual = Black76::price(is_call, F, K, t, r, v);
             assert!(is_close_to(actual, expected, f64::EPSILON));
         }
     }
@@ -323,7 +321,7 @@ mod tests {
     #[test]
     fn it_should_calc_ivol() {
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, p, expected) in [
+        for (is_call, F, K, r, t, p, expected) in [
             (
                 true,
                 110.0,
@@ -379,7 +377,7 @@ mod tests {
                 0.125,
             ),
         ] {
-            let actual = Black76::ivol(is_call, F, K, T, r, p, 20, 1e-8);
+            let actual = Black76::ivol(is_call, F, K, t, r, p, 20, 1e-8);
             assert!(is_close_to(actual, expected, 1e-9));
         }
     }
@@ -392,7 +390,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected, numeric_threshold) in [
+        for (is_call, F, K, r, t, v, expected, numeric_threshold) in [
             (
                 true,
                 110.0,
@@ -454,17 +452,17 @@ mod tests {
                 1e-9,
             ),
         ] {
-            let analytic = Black76::delta(is_call, F, K, T, r, v);
+            let analytic = Black76::delta(is_call, F, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numerical = ng[&is_call].delta(F, K, T, r, v, 0.0001, DifferenceMethod::Central);
+            let numerical = ng[&is_call].delta(F, K, t, r, v, 0.0001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numerical, analytic, numeric_threshold),
                 "[{}].delta({}, {}, {}, {}, {}) -> {} <diff={:e}>",
                 is_call,
                 F,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numerical,
@@ -481,7 +479,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected, threshold) in [
+        for (is_call, F, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -543,17 +541,17 @@ mod tests {
                 1e-9,
             ),
         ] {
-            let analytic = Black76::gamma(F, K, T, r, v);
+            let analytic = Black76::gamma(F, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numeric = ng[&is_call].gamma(F, K, T, r, v, 0.01, DifferenceMethod::Central);
+            let numeric = ng[&is_call].gamma(F, K, t, r, v, 0.01, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].gamma({}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 F,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numeric,
@@ -570,7 +568,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected, threshold) in [
+        for (is_call, F, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -632,13 +630,13 @@ mod tests {
                 1e-9,
             ),
         ] {
-            let analytic = Black76::theta(is_call, F, K, T, r, v);
+            let analytic = Black76::theta(is_call, F, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
             let numerical = ng[&is_call].theta(
                 F,
                 K,
-                T,
+                t,
                 r,
                 v,
                 1.0 / 365.0 / 24.0 / 60.0,
@@ -650,7 +648,7 @@ mod tests {
                 is_call,
                 F,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numerical,
@@ -667,7 +665,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected, threshold) in [
+        for (is_call, F, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -729,17 +727,17 @@ mod tests {
                 1e-7,
             ),
         ] {
-            let analytic = Black76::vega(F, K, T, r, v);
+            let analytic = Black76::vega(F, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numerical = ng[&is_call].vega(F, K, T, r, v, 0.00001, DifferenceMethod::Central);
+            let numerical = ng[&is_call].vega(F, K, t, r, v, 0.00001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numerical, analytic, threshold),
                 "[{}].vega({}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 F,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numerical,
@@ -756,7 +754,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, T, v, expected, threshold) in [
+        for (is_call, F, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -818,17 +816,17 @@ mod tests {
                 1e-10,
             ),
         ] {
-            let analytic = Black76::rho(is_call, F, K, T, r, v);
+            let analytic = Black76::rho(is_call, F, K, t, r, v);
             assert!(is_close_to(analytic, expected, f64::EPSILON));
 
-            let numerical = ng[&is_call].rho(F, K, T, r, v, 0.00001, DifferenceMethod::Central);
+            let numerical = ng[&is_call].rho(F, K, t, r, v, 0.00001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numerical, analytic, threshold),
                 "[{}].rho({}, {}, {}, {}, {}) -> {} (diff={:e})",
                 is_call,
                 F,
                 K,
-                T,
+                t,
                 r,
                 v,
                 numerical,
@@ -845,7 +843,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, _q, T, v, expected) in [
+        for (is_call, S, K, r, _q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -907,10 +905,10 @@ mod tests {
                 1.996442942803649,
             ),
         ] {
-            let analytic = Black76::vanna(S, K, T, r, v);
+            let analytic = Black76::vanna(S, K, t, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vanna(S, K, T, r, v, 0.01, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vanna(S, K, t, r, v, 0.01, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-4));
         }
     }
@@ -923,7 +921,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, _q, T, v, expected) in [
+        for (is_call, S, K, r, _q, t, v, expected) in [
             (
                 true,
                 110.0,
@@ -985,10 +983,10 @@ mod tests {
                 145.98618448189166,
             ),
         ] {
-            let analytic = Black76::vomma(S, K, T, r, v);
+            let analytic = Black76::vomma(S, K, t, r, v);
             assert!(is_close_to(analytic, expected, 1e-12));
 
-            let numeric = ng[&is_call].vomma(S, K, T, r, v, 0.001, DifferenceMethod::Central);
+            let numeric = ng[&is_call].vomma(S, K, t, r, v, 0.001, DifferenceMethod::Central);
             assert!(is_close_to(numeric, analytic, 1e-2));
         }
     }

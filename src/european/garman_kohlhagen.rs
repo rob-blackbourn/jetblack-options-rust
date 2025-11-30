@@ -44,8 +44,6 @@
 //! * max_iterations (int, Optional): The maximum number of iterations before a price is returned. Defaults to 20.
 //! * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
 
-use libm::{exp, log, sqrt};
-
 use crate::{fdm::FdmWithDividendYield, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
@@ -58,12 +56,12 @@ impl GarmanKohlhagen {
     /// The fair value of a currency option.
     #[allow(non_snake_case)]
     pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, rf: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + (r - rf + (v * v) / 2.0) * t) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + (r - rf + (v * v) / 2.0) * t) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         if is_call {
-            S * exp(-rf * t) * cdf(d1) - K * exp(-r * t) * cdf(d2)
+            S * (-rf * t).exp() * cdf(d1) - K * (-r * t).exp() * cdf(d2)
         } else {
-            K * exp(-r * t) * cdf(-d2) - S * exp(-rf * t) * cdf(-d1)
+            K * (-r * t).exp() * cdf(-d2) - S * (-rf * t).exp() * cdf(-d1)
         }
     }
 

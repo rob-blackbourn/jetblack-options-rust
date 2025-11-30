@@ -25,9 +25,7 @@
 //! \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
 //! $$
 
-use core::f64;
-
-use libm::{exp, fabs, log, sqrt};
+use std::f64::consts::PI;
 
 use crate::distributions::inv_cdf;
 use crate::{fdm::FdmWithDividendYield, implied_volatility::solve_ivol};
@@ -60,14 +58,14 @@ impl BlackScholesMerton {
     /// Put price: $e^{-r \tau} K\Phi(-d_2) -  Se^{-q \tau}\Phi(-d_1)$
     #[allow(non_snake_case)]
     pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
-        let F = S * exp((r - q) * t);
+        let F = S * ((r - q) * t).exp();
         if is_call {
-            exp(-r * t) * (F * cdf(d1) - K * cdf(d2))
+            (-r * t).exp() * (F * cdf(d1) - K * cdf(d2))
         } else {
-            exp(-r * t) * (K * cdf(-d2) - F * cdf(-d1))
+            (-r * t).exp() * (K * cdf(-d2) - F * cdf(-d1))
         }
     }
 
@@ -109,12 +107,12 @@ impl BlackScholesMerton {
     /// Put $\Delta$ $-e^{-q \tau} \Phi(-d_1)$
     #[allow(non_snake_case)]
     pub fn delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
 
         if is_call {
-            exp(-q * t) * cdf(d1)
+            (-q * t).exp() * cdf(d1)
         } else {
-            -exp(-q * t) * cdf(-d1)
+            -(-q * t).exp() * cdf(-d1)
         }
     }
 
@@ -125,9 +123,9 @@ impl BlackScholesMerton {
     /// $$
     #[allow(non_snake_case)]
     pub fn gamma(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
 
-        exp(-q * t) * pdf(d1) / (S * v * sqrt(t))
+        (-q * t).exp() * pdf(d1) / (S * v * t.sqrt())
     }
 
     /// The theta or time decay of the value of the option.
@@ -141,19 +139,19 @@ impl BlackScholesMerton {
     /// $$
     #[allow(non_snake_case)]
     pub fn theta(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         if is_call {
-            let p1 = -S * exp(-q * t) * pdf(d1) * v / (2.0 * sqrt(t));
-            let p2 = -q * S * exp(-q * t) * cdf(d1);
-            let p3 = r * K * exp(-r * t) * cdf(d2);
+            let p1 = -S * (-q * t).exp() * pdf(d1) * v / (2.0 * t.sqrt());
+            let p2 = -q * S * (-q * t).exp() * cdf(d1);
+            let p3 = r * K * (-r * t).exp() * cdf(d2);
 
             p1 - p2 - p3
         } else {
-            let p1 = -S * exp(-q * t) * pdf(d1) * v / (2.0 * sqrt(t));
-            let p2 = -q * S * exp(-q * t) * cdf(-d1);
-            let p3 = r * K * exp(-r * t) * cdf(-d2);
+            let p1 = -S * (-q * t).exp() * pdf(d1) * v / (2.0 * t.sqrt());
+            let p2 = -q * S * (-q * t).exp() * cdf(-d1);
+            let p3 = r * K * (-r * t).exp() * cdf(-d2);
 
             p1 + p2 + p3
         }
@@ -166,8 +164,8 @@ impl BlackScholesMerton {
     /// $$
     #[allow(non_snake_case)]
     pub fn vega(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        S * exp(-q * t) * pdf(d1) * sqrt(t)
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        S * (-q * t).exp() * pdf(d1) * t.sqrt()
     }
 
     /// The sensitivity of the option price to the risk free rate.
@@ -180,23 +178,23 @@ impl BlackScholesMerton {
     /// futures_rho.
     #[allow(non_snake_case)]
     pub fn rho(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         if is_call {
-            K * t * exp(-r * t) * cdf(d2)
+            K * t * (-r * t).exp() * cdf(d2)
         } else {
-            -K * t * exp(-r * t) * cdf(-d2)
+            -K * t * (-r * t).exp() * cdf(-d2)
         }
     }
 
     /// Sensitivity to the cost of carry.
     #[allow(non_snake_case)]
     pub fn carry(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
         if is_call {
-            t * S * exp(-q * t) * cdf(d1)
+            t * S * (-q * t).exp() * cdf(d1)
         } else {
-            -t * S * exp(-q * t) * cdf(-d1)
+            -t * S * (-q * t).exp() * cdf(-d1)
         }
     }
 
@@ -219,12 +217,12 @@ impl BlackScholesMerton {
 
     #[allow(non_snake_case)]
     pub fn forward_delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
 
         if is_call {
-            exp(-r * t) * cdf(d1)
+            (-r * t).exp() * cdf(d1)
         } else {
-            exp(-r * t) * (cdf(d1) - 1.0)
+            (-r * t).exp() * (cdf(d1) - 1.0)
         }
     }
 
@@ -237,114 +235,114 @@ impl BlackScholesMerton {
     /// Also known as DdeltaDvol.
     #[allow(non_snake_case)]
     pub fn vanna(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
-        -exp(-q * t) * d2 / v * pdf(d1)
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
+        -(-q * t).exp() * d2 / v * pdf(d1)
     }
 
     /// Also known as DVannaDvol
     #[allow(non_snake_case)]
     pub fn ddelta_dvol_dvol(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::vanna(S, K, t, r, q, v) * 1.0 / v * (d1 * d2 - d1 / d2 - 1.0)
     }
 
     /// Also known as DdeltaDtime
     #[allow(non_snake_case)]
     pub fn charm(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
 
         if is_call {
-            q * exp(-q * t) * cdf(d1)
-                - exp(-q * t) * pdf(d1) * (2.0 * (r - q) * t - d2 * v * sqrt(t))
-                    / (2.0 * t * v * sqrt(t))
+            q * (-q * t).exp() * cdf(d1)
+                - (-q * t).exp() * pdf(d1) * (2.0 * (r - q) * t - d2 * v * t.sqrt())
+                    / (2.0 * t * v * t.sqrt())
         } else {
-            -q * exp(-q * t) * cdf(-d1)
-                - exp(-q * t) * pdf(d1) * (2.0 * (r - q) * t - d2 * v * sqrt(t))
-                    / (2.0 * t * v * sqrt(t))
+            -q * (-q * t).exp() * cdf(-d1)
+                - (-q * t).exp() * pdf(d1) * (2.0 * (r - q) * t - d2 * v * t.sqrt())
+                    / (2.0 * t * v * t.sqrt())
         }
     }
 
     #[allow(non_snake_case)]
     pub fn saddle_gamma(K: f64, q: f64, v: f64) -> f64 {
-        sqrt(exp(1.0) / f64::consts::PI) * sqrt((2.0 * -q) / (v * v) + 1.0) / K
+        (f64::exp(1.0) / PI).sqrt() * ((2.0 * -q) / (v * v) + 1.0).sqrt() / K
     }
 
     /// Also known as speed
     #[allow(non_snake_case)]
     pub fn dgamma_dspot(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        -BlackScholesMerton::gamma(S, K, t, r, q, v) * (1.0 + d1 / (v * sqrt(t))) / S
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        -BlackScholesMerton::gamma(S, K, t, r, q, v) * (1.0 + d1 / (v * t.sqrt())) / S
     }
 
     /// Also known as zomma.
     #[allow(non_snake_case)]
     pub fn dgamma_dvol(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::gamma(S, K, t, r, q, v) * ((d1 * d2 - 1.0) / v)
     }
 
     #[allow(non_snake_case)]
     pub fn dgamma_dtime(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::gamma(S, K, t, r, q, v)
-            * (q + (r - q) * d1 / (v * sqrt(t)) + (1.0 - d1 * d2) / (2.0 * t))
+            * (q + (r - q) * d1 / (v * t.sqrt()) + (1.0 - d1 * d2) / (2.0 * t))
     }
 
     /// Also known as SpeedP.
     #[allow(non_snake_case)]
     pub fn dgammap_dspot(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        -BlackScholesMerton::gamma(S, K, t, r, q, v) * (d1) / (100.0 * v * sqrt(t))
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        -BlackScholesMerton::gamma(S, K, t, r, q, v) * (d1) / (100.0 * v * t.sqrt())
     }
 
     #[allow(non_snake_case)]
     pub fn dgammap_dvol(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         S / 100.0 * BlackScholesMerton::gamma(S, K, t, r, q, v) * ((d1 * d2 - 1.0) / v)
     }
 
     #[allow(non_snake_case)]
     pub fn dgammap_dtime(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::gammap(S, K, t, r, q, v)
-            * (q + (r - q) * d1 / (v * sqrt(t)) + (1.0 - d1 * d2) / (2.0 * t))
+            * (q + (r - q) * d1 / (v * t.sqrt()) + (1.0 - d1 * d2) / (2.0 * t))
     }
 
     #[allow(non_snake_case)]
     pub fn dvega_dtime(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::vega(S, K, t, r, q, v)
-            * (q + (r - q) * d1 / (v * sqrt(t)) - (1.0 + d1 * d2) / (2.0 * t))
+            * (q + (r - q) * d1 / (v * t.sqrt()) - (1.0 + d1 * d2) / (2.0 * t))
     }
 
     /// Also known as DvegaDvol
     #[allow(non_snake_case)]
     pub fn vomma(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::vega(S, K, t, r, q, v) * d1 * d2 / v
     }
 
     #[allow(non_snake_case)]
     pub fn dvomma_dvol(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::vomma(S, K, t, r, q, v) * 1.0 / v * (d1 * d2 - d1 / d2 - d2 / d1 - 1.0)
     }
 
     /// Also known as VommaP.
     #[allow(non_snake_case)]
     pub fn dvegap_dvol(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         BlackScholesMerton::vegap(S, K, t, r, q, v) * d1 * d2 / v
     }
 
@@ -356,37 +354,37 @@ impl BlackScholesMerton {
 
     #[allow(non_snake_case)]
     pub fn variance_vega(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        S * exp(-q * t) * pdf(d1) * sqrt(t) / (2.0 * v)
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        S * (-q * t).exp() * pdf(d1) * t.sqrt() / (2.0 * v)
     }
 
     #[allow(non_snake_case)]
     pub fn variance_delta(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
-        S * exp(-q * t) * pdf(d1) * (-d2) / (2.0 * (v * v))
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
+        S * (-q * t).exp() * pdf(d1) * (-d2) / (2.0 * (v * v))
     }
 
     #[allow(non_snake_case)]
     pub fn variance_vomma(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
-        S * exp(-q * t) * sqrt(t) / (4.0 * (v * v * v)) * pdf(d1) * (d1 * d2 - 1.0)
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
+        S * (-q * t).exp() * t.sqrt() / (4.0 * (v * v * v)) * pdf(d1) * (d1 * d2 - 1.0)
     }
 
     #[allow(non_snake_case)]
     pub fn variance_ultima(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
-        S * exp(-q * t) * sqrt(t) / (8.0 * (v * v * v * v * v))
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
+        S * (-q * t).exp() * t.sqrt() / (8.0 * (v * v * v * v * v))
             * pdf(d1)
             * ((d1 * d2 - 1.0) * (d1 * d2 - 3.0) - ((d1 * d1) + (d2 * d2)))
     }
 
     #[allow(non_snake_case)]
     pub fn theta_driftless(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        -S * exp(-q * t) * pdf(d1) * v / (2.0 * sqrt(t))
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        -S * (-q * t).exp() * pdf(d1) * v / (2.0 * t.sqrt())
     }
 
     #[allow(non_snake_case)]
@@ -397,18 +395,18 @@ impl BlackScholesMerton {
     /// Also known as rho2.
     #[allow(non_snake_case)]
     pub fn phi(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
         if is_call {
-            -t * S * exp(-q * t) * cdf(d1)
+            -t * S * (-q * t).exp() * cdf(d1)
         } else {
-            t * S * exp(-q * t) * cdf(-d1)
+            t * S * (-q * t).exp() * cdf(-d1)
         }
     }
 
     #[allow(non_snake_case)]
     pub fn dzeta_dvol(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         if is_call {
             -pdf(d2) * d1 / v
         } else {
@@ -418,12 +416,12 @@ impl BlackScholesMerton {
 
     #[allow(non_snake_case)]
     pub fn dzeta_dtime(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d1 = (log(S / K) + t * (r - q + (v * v) / 2.0)) / (v * sqrt(t));
-        let d2 = d1 - v * sqrt(t);
+        let d1 = ((S / K).ln() + t * (r - q + (v * v) / 2.0)) / (v * t.sqrt());
+        let d2 = d1 - v * t.sqrt();
         if is_call {
-            pdf(d2) * ((r - q) / (v * sqrt(t)) - d1 / (2.0 * t))
+            pdf(d2) * ((r - q) / (v * t.sqrt()) - d1 / (2.0 * t))
         } else {
-            -pdf(d2) * ((r - q) / (v * sqrt(t)) - d1 / (2.0 * t))
+            -pdf(d2) * ((r - q) / (v * t.sqrt()) - d1 / (2.0 * t))
         }
     }
 
@@ -439,35 +437,35 @@ impl BlackScholesMerton {
         v: f64,
     ) -> f64 {
         if is_call {
-            let K = K + BlackScholesMerton::price(true, S, K, t, r, q, v) * exp(r * t);
-            let d2 = (log(S / K) + (r - q - (v * v) / 2.0) * t) / (v * sqrt(t));
+            let K = K + BlackScholesMerton::price(true, S, K, t, r, q, v) * (r * t).exp();
+            let d2 = ((S / K).ln() + (r - q - (v * v) / 2.0) * t) / (v * t.sqrt());
             cdf(d2)
         } else {
-            let K = K - BlackScholesMerton::price(false, S, K, t, r, q, v) * exp(r * t);
-            let d2 = (log(S / K) + (r - q - (v * v) / 2.0) * t) / (v * sqrt(t));
+            let K = K - BlackScholesMerton::price(false, S, K, t, r, q, v) * (r * t).exp();
+            let d2 = ((S / K).ln() + (r - q - (v * v) / 2.0) * t) / (v * t.sqrt());
             cdf(-d2)
         }
     }
 
     #[allow(non_snake_case)]
     pub fn strike_delta(is_call: bool, S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d2 = (log(S / K) + (r - q - (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = ((S / K).ln() + (r - q - (v * v) / 2.0) * t) / (v * t.sqrt());
         if is_call {
-            -exp(-r * t) * cdf(d2)
+            -(-r * t).exp() * cdf(d2)
         } else {
-            exp(-r * t) * cdf(-d2)
+            (-r * t).exp() * cdf(-d2)
         }
     }
 
     #[allow(non_snake_case)]
     pub fn risk_neutral_density(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        let d2 = (log(S / K) + (r - q - (v * v) / 2.0) * t) / (v * sqrt(t));
-        exp(-r * t) * pdf(d2) / (K * v * sqrt(t))
+        let d2 = ((S / K).ln() + (r - q - (v * v) / 2.0) * t) / (v * t.sqrt());
+        (-r * t).exp() * pdf(d2) / (K * v * t.sqrt())
     }
 
     #[allow(non_snake_case)]
     pub fn gamma_from_delta(S: f64, t: f64, q: f64, v: f64, delta_: f64) -> f64 {
-        exp(-q * t) * pdf(inv_cdf(exp(q * t) * fabs(delta_))) / (S * v * sqrt(t))
+        (-q * t).exp() * pdf(inv_cdf((q * t).exp() * delta_.abs())) / (S * v * t.sqrt())
     }
 
     #[allow(non_snake_case)]
@@ -477,7 +475,7 @@ impl BlackScholesMerton {
 
     #[allow(non_snake_case)]
     pub fn vega_from_delta(S: f64, t: f64, q: f64, delta_: f64) -> f64 {
-        S * exp(-q * t) * sqrt(t) * pdf(inv_cdf(exp(q * t) * fabs(delta_)))
+        S * (-q * t).exp() * t.sqrt() * pdf(inv_cdf((q * t).exp() * delta_.abs()))
     }
 
     #[allow(non_snake_case)]
@@ -496,18 +494,18 @@ impl BlackScholesMerton {
         delta_: f64,
     ) -> f64 {
         if is_call {
-            S * exp(-inv_cdf(delta_ * exp(q * t)) * v * sqrt(t) + (r - q + v * v / 2.0) * t)
+            S * (-inv_cdf(delta_ * (q * t).exp()) * v * t.sqrt() + (r - q + v * v / 2.0) * t).exp()
         } else {
-            S * exp(inv_cdf(-delta_ * exp(q * t)) * v * sqrt(t) + (r - q + v * v / 2.0) * t)
+            S * (inv_cdf(-delta_ * (q * t).exp()) * v * t.sqrt() + (r - q + v * v / 2.0) * t).exp()
         }
     }
 
     #[allow(non_snake_case)]
     pub fn in_the_money_prob_from_delta(is_call: bool, t: f64, q: f64, v: f64, delta_: f64) -> f64 {
         if is_call {
-            cdf(inv_cdf(delta_ / exp(-q * t)) - v * sqrt(t))
+            cdf(inv_cdf(delta_ / (-q * t).exp()) - v * t.sqrt())
         } else {
-            cdf(inv_cdf(-delta_ / exp(-q * t)) + v * sqrt(t))
+            cdf(inv_cdf(-delta_ / (-q * t).exp()) + v * t.sqrt())
         }
     }
 
@@ -522,9 +520,9 @@ impl BlackScholesMerton {
         in_the_money_prob: f64,
     ) -> f64 {
         if is_call {
-            S * exp(-inv_cdf(in_the_money_prob) * v * sqrt(t) + (r - q - v * v / 2.0) * t)
+            S * (-inv_cdf(in_the_money_prob) * v * t.sqrt() + (r - q - v * v / 2.0) * t).exp()
         } else {
-            S * exp(inv_cdf(in_the_money_prob) * v * sqrt(t) + (r - q - v * v / 2.0) * t)
+            S * (inv_cdf(in_the_money_prob) * v * t.sqrt() + (r - q - v * v / 2.0) * t).exp()
         }
     }
 
@@ -536,7 +534,7 @@ impl BlackScholesMerton {
         v: f64,
         in_the_money_prob: f64,
     ) -> f64 {
-        exp(-r * t) * pdf(inv_cdf(in_the_money_prob)) / (K * v * sqrt(t))
+        (-r * t).exp() * pdf(inv_cdf(in_the_money_prob)) / (K * v * t.sqrt())
     }
 
     #[allow(non_snake_case)]
@@ -548,9 +546,9 @@ impl BlackScholesMerton {
         in_the_money_prob: f64,
     ) -> f64 {
         if is_call {
-            cdf(inv_cdf(in_the_money_prob * exp(-q * t)) - v * sqrt(t))
+            cdf(inv_cdf(in_the_money_prob * (-q * t).exp()) - v * t.sqrt())
         } else {
-            -cdf(inv_cdf(in_the_money_prob * exp(-q * t)) + v * sqrt(t))
+            -cdf(inv_cdf(in_the_money_prob * (-q * t).exp()) + v * t.sqrt())
         }
     }
 
@@ -561,9 +559,9 @@ impl BlackScholesMerton {
     #[allow(non_snake_case)]
     pub fn max_ddelta_dvol_asset(is_lower: bool, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
         if is_lower {
-            K * exp((q - r) * t - v * sqrt(t) * sqrt(4.0 + t * (v * v)) / 2.0)
+            K * ((q - r) * t - v * t.sqrt() * (4.0 + t * (v * v)).sqrt() / 2.0).exp()
         } else {
-            K * exp((q - r) * t + v * sqrt(t) * sqrt(4.0 + t * (v * v)) / 2.0)
+            K * ((q - r) * t + v * t.sqrt() * (4.0 + t * (v * v)).sqrt() / 2.0).exp()
         }
     }
 
@@ -574,28 +572,28 @@ impl BlackScholesMerton {
     #[allow(non_snake_case)]
     pub fn max_ddelta_dvol_strike(is_lower: bool, S: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
         if is_lower {
-            S * exp((r - q) * t - v * sqrt(t) * sqrt(4.0 + t * v * 2.0) / 2.0)
+            S * ((r - q) * t - v * t.sqrt() * (4.0 + t * v * 2.0).sqrt() / 2.0).exp()
         } else {
-            S * exp((r - q) * t + v * sqrt(t) * sqrt(4.0 + t * (v * v)) / 2.0)
+            S * ((r - q) * t + v * t.sqrt() * (4.0 + t * (v * v)).sqrt() / 2.0).exp()
         }
     }
 
     /// What strike price that gives maximum gamma and vega
     #[allow(non_snake_case)]
     pub fn max_gamma_vega_at_X(S: f64, r: f64, q: f64, t: f64, v: f64) -> f64 {
-        S * exp((r - q + v * v / 2.0) * t)
+        S * ((r - q + v * v / 2.0) * t).exp()
     }
 
     /// What asset price that gives maximum gamma
     #[allow(non_snake_case)]
     pub fn max_gamma_at_S(x: f64, r: f64, q: f64, t: f64, v: f64) -> f64 {
-        x * exp((q - r - 3.0 * v * v / 2.0) * t)
+        x * ((q - r - 3.0 * v * v / 2.0) * t).exp()
     }
 
     /// What asset price that gives maximum vega
     #[allow(non_snake_case)]
     pub fn max_vega_at_S(K: f64, r: f64, q: f64, t: f64, v: f64) -> f64 {
-        K * exp((q - r + v * v / 2.0) * t)
+        K * ((q - r + v * v / 2.0) * t).exp()
     }
 
     #[allow(non_snake_case)]
@@ -608,24 +606,24 @@ impl BlackScholesMerton {
         q: f64,
         v: f64,
     ) -> f64 {
-        let d2 = (log(S / K) + (r - q - (v * v) / 2.0) * t) / (v * sqrt(t));
+        let d2 = ((S / K).ln() + (r - q - (v * v) / 2.0) * t) / (v * t.sqrt());
 
         if is_call { cdf(d2) } else { cdf(-d2) }
     }
 
     #[allow(non_snake_case)]
     pub fn delta_mirror_strike(S: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        S * exp((r - q + (v * v) / 2.0) * t)
+        S * ((r - q + (v * v) / 2.0) * t).exp()
     }
 
     #[allow(non_snake_case)]
     pub fn probability_mirror_strike(S: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        S * exp((r - q - (v * v) / 2.0) * t)
+        S * ((r - q - (v * v) / 2.0) * t).exp()
     }
 
     #[allow(non_snake_case)]
     pub fn delta_mirror_call_put_strike(S: f64, K: f64, t: f64, r: f64, q: f64, v: f64) -> f64 {
-        (S * S) / K * exp((2.0 * (r - q) + (v * v)) * t)
+        (S * S) / K * ((2.0 * (r - q) + (v * v)) * t).exp()
     }
 
     #[allow(non_snake_case)]
@@ -642,12 +640,12 @@ impl BlackScholesMerton {
     ) -> f64 {
         if is_absolute {
             // as a value
-            sqrt(f64::consts::PI / 4.0) * BlackScholesMerton::vega(S, K, t, r, q, v) * v
-                / sqrt(n_hedges.into())
+            (PI / 4.0).sqrt() * BlackScholesMerton::vega(S, K, t, r, q, v) * v
+                / (n_hedges as f64).sqrt()
         } else {
             // as a percent
-            sqrt(f64::consts::PI / 4.0) * BlackScholesMerton::vega(S, K, t, r, q, v) * v
-                / sqrt(n_hedges.into())
+            (PI / 4.0).sqrt() * BlackScholesMerton::vega(S, K, t, r, q, v) * v
+                / (n_hedges as f64).sqrt()
                 / BlackScholesMerton::price(is_call, S, K, t, r, q, v)
         }
     }
