@@ -36,6 +36,7 @@
         "leisen",
         "libm",
         "mathcal",
+        "println",
         "Raphson",
         "reimer",
         "scholes",
