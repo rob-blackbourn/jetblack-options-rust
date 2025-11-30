@@ -16,7 +16,8 @@ use crate::european::GeneralizedBlackScholes as BS;
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
 
 fn cdf(x: f64) -> f64 {
-    crate::distributions::cdf(x, 0.0, 1.0)
+    crate::distributions::cnd::CND(x)
+    // crate::distributions::cdf(x, 0.0, 1.0)
 }
 fn pdf(x: f64) -> f64 {
     crate::distributions::pdf(x, 0.0, 1.0)
