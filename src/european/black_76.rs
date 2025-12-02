@@ -250,7 +250,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, F, K, t, r, v, expected) in [
+        for (is_call, F, K, t, r, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -259,6 +259,7 @@ mod tests {
                 0.1,
                 0.125,
                 10.143390791460092,
+                1e-12,
             ),
             (
                 false,
@@ -268,6 +269,7 @@ mod tests {
                 0.1,
                 0.125,
                 0.63109654645295865,
+                1e-12,
             ),
             (
                 true,
@@ -277,6 +279,7 @@ mod tests {
                 0.1,
                 0.125,
                 3.3531192847248605,
+                1e-12,
             ),
             (
                 false,
@@ -286,6 +289,7 @@ mod tests {
                 0.1,
                 0.125,
                 3.3531192847248534,
+                1e-12,
             ),
             (
                 true,
@@ -295,6 +299,7 @@ mod tests {
                 0.1,
                 0.125,
                 0.63109654645296376,
+                1e-12,
             ),
             (
                 false,
@@ -304,17 +309,31 @@ mod tests {
                 0.1,
                 0.125,
                 10.143390791460105,
+                1e-12,
             ),
         ] {
             let actual = Black76::price(is_call, F, K, t, r, v);
-            assert!(is_close_to(actual, expected, f64::EPSILON));
+            assert!(
+                is_close_to(actual, expected, f64::EPSILON),
+                "price({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                F,
+                K,
+                t,
+                r,
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 
     #[test]
     fn it_should_calc_ivol() {
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, t, p, expected) in [
+        for (is_call, F, K, r, t, p, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -323,6 +342,7 @@ mod tests {
                 6.0 / 12.0,
                 10.143390791460092,
                 0.125,
+                1e-12,
             ),
             (
                 false,
@@ -332,6 +352,7 @@ mod tests {
                 6.0 / 12.0,
                 0.6310965464529535,
                 0.125,
+                1e-12,
             ),
             (
                 true,
@@ -341,6 +362,7 @@ mod tests {
                 6.0 / 12.0,
                 3.3531192847248605,
                 0.125,
+                1e-12,
             ),
             (
                 false,
@@ -350,6 +372,7 @@ mod tests {
                 6.0 / 12.0,
                 3.3531192847248534,
                 0.125,
+                1e-12,
             ),
             (
                 true,
@@ -359,6 +382,7 @@ mod tests {
                 6.0 / 12.0,
                 0.6310965464529654,
                 0.125,
+                1e-12,
             ),
             (
                 false,
@@ -368,10 +392,24 @@ mod tests {
                 6.0 / 12.0,
                 10.143390791460092,
                 0.125,
+                1e-12,
             ),
         ] {
-            let actual = Black76::ivol(is_call, F, K, t, r, p, 20, 1e-8);
-            assert!(is_close_to(actual, expected, 1e-9));
+            let actual = Black76::ivol(is_call, F, K, t, r, p, 100, 1e-12);
+            assert!(
+                is_close_to(actual, expected, threshold),
+                "ivol({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                F,
+                K,
+                t,
+                r,
+                p,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 
@@ -383,7 +421,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, F, K, r, t, v, expected, numeric_threshold) in [
+        for (is_call, F, K, r, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -446,20 +484,35 @@ mod tests {
             ),
         ] {
             let analytic = Black76::delta(is_call, F, K, t, r, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
-
-            let numerical = ng[&is_call].delta(F, K, t, r, v, 0.0001, DifferenceMethod::Central);
             assert!(
-                is_close_to(numerical, analytic, numeric_threshold),
-                "[{}].delta({}, {}, {}, {}, {}) -> {} <diff={:e}>",
+                is_close_to(analytic, expected, f64::EPSILON),
+                "delta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 F,
                 K,
                 t,
                 r,
                 v,
-                numerical,
-                analytic - numerical
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
+
+            let numeric = ng[&is_call].delta(F, K, t, r, v, 0.0001, DifferenceMethod::Central);
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].delta({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                F,
+                K,
+                t,
+                r,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -535,12 +588,24 @@ mod tests {
             ),
         ] {
             let analytic = Black76::gamma(F, K, t, r, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "gamma({}, {}, {}, {}, {}) -> {} (expected: {}, diff {:e}, threshold: {:e})",
+                F,
+                K,
+                t,
+                r,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
 
             let numeric = ng[&is_call].gamma(F, K, t, r, v, 0.01, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].gamma({}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].gamma({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 F,
                 K,
@@ -548,7 +613,9 @@ mod tests {
                 r,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -624,7 +691,20 @@ mod tests {
             ),
         ] {
             let analytic = Black76::theta(is_call, F, K, t, r, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "theta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                F,
+                K,
+                t,
+                r,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
 
             let numerical = ng[&is_call].theta(
                 F,
@@ -637,7 +717,7 @@ mod tests {
             );
             assert!(
                 is_close_to(numerical, analytic, threshold),
-                "[{}].theta({}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].theta({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 F,
                 K,
@@ -645,7 +725,9 @@ mod tests {
                 r,
                 v,
                 numerical,
-                analytic - numerical
+                analytic,
+                (analytic - numerical).abs(),
+                threshold
             );
         }
     }
@@ -721,12 +803,24 @@ mod tests {
             ),
         ] {
             let analytic = Black76::vega(F, K, t, r, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "vega({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e}",
+                F,
+                K,
+                t,
+                r,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numerical = ng[&is_call].vega(F, K, t, r, v, 0.00001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numerical, analytic, threshold),
-                "[{}].vega({}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].vega({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 F,
                 K,
@@ -734,7 +828,9 @@ mod tests {
                 r,
                 v,
                 numerical,
-                analytic - numerical
+                analytic,
+                (analytic - numerical).abs(),
+                threshold
             );
         }
     }
@@ -810,20 +906,35 @@ mod tests {
             ),
         ] {
             let analytic = Black76::rho(is_call, F, K, t, r, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
-
-            let numerical = ng[&is_call].rho(F, K, t, r, v, 0.00001, DifferenceMethod::Central);
             assert!(
-                is_close_to(numerical, analytic, threshold),
-                "[{}].rho({}, {}, {}, {}, {}) -> {} (diff={:e})",
+                is_close_to(analytic, expected, f64::EPSILON),
+                "rho({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 F,
                 K,
                 t,
                 r,
                 v,
-                numerical,
-                analytic - numerical
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
+
+            let numeric = ng[&is_call].rho(F, K, t, r, v, 0.00001, DifferenceMethod::Central);
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].rho({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                F,
+                K,
+                t,
+                r,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -836,7 +947,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, _q, t, v, expected) in [
+        for (is_call, S, K, r, _q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -846,6 +957,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.6720354862986977,
+                1e-4,
             ),
             (
                 false,
@@ -856,6 +968,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.6720354862986977,
+                1e-4,
             ),
             (
                 true,
@@ -866,6 +979,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.13403747331196794,
+                1e-4,
             ),
             (
                 false,
@@ -876,6 +990,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.13403747331196794,
+                1e-4,
             ),
             (
                 true,
@@ -886,6 +1001,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 1.996442942803649,
+                1e-4,
             ),
             (
                 false,
@@ -896,13 +1012,39 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 1.996442942803649,
+                1e-4,
             ),
         ] {
             let analytic = Black76::vanna(S, K, t, r, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "vanna({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                1e-12
+            );
 
             let numeric = ng[&is_call].vanna(S, K, t, r, v, 0.01, 0.001, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-4));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].vanna({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                v,
+                numeric,
+                analytic,
+                (expected - analytic).abs(),
+                threshold
+            );
         }
     }
 
@@ -914,7 +1056,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, _q, t, v, expected) in [
+        for (is_call, S, K, r, _q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -924,6 +1066,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 145.98618448189166,
+                1e-2,
             ),
             (
                 false,
@@ -934,6 +1077,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 145.98618448189166,
+                1e-2,
             ),
             (
                 true,
@@ -944,6 +1088,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.41886710409989986,
+                1e-2,
             ),
             (
                 false,
@@ -954,6 +1099,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.41886710409989986,
+                1e-2,
             ),
             (
                 true,
@@ -964,6 +1110,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 145.98618448189166,
+                1e-2,
             ),
             (
                 false,
@@ -974,13 +1121,39 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 145.98618448189166,
+                1e-2,
             ),
         ] {
             let analytic = Black76::vomma(S, K, t, r, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "vomma({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                1e-12
+            );
 
             let numeric = ng[&is_call].vomma(S, K, t, r, v, 0.001, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-2));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].vomma({}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 }
