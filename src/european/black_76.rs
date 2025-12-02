@@ -37,14 +37,9 @@
 //! * max_iterations (usize): The maximum number of iterations before a price is returned.
 //! * epsilon (f64): The largest acceptable error.
 
-use crate::{fdm::FdmWithoutCarry, implied_volatility::solve_ivol};
-
-fn cdf(x: f64) -> f64 {
-    crate::distributions::cdf(x, 0.0, 1.0)
-}
-fn pdf(x: f64) -> f64 {
-    crate::distributions::pdf(x, 0.0, 1.0)
-}
+use crate::distributions::{cdf, pdf};
+use crate::fdm::FdmWithoutCarry;
+use crate::implied_volatility::solve_ivol;
 
 pub struct Black76 {}
 

@@ -23,15 +23,9 @@
 
 use std::f64::consts::PI;
 
-use crate::distributions::inv_cdf;
-use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
-
-fn cdf(x: f64) -> f64 {
-    crate::distributions::cdf(x, 0.0, 1.0)
-}
-fn pdf(x: f64) -> f64 {
-    crate::distributions::pdf(x, 0.0, 1.0)
-}
+use crate::distributions::{cdf, inv_cdf, pdf};
+use crate::fdm::FdmWithCarry;
+use crate::implied_volatility::solve_ivol;
 
 pub struct GeneralizedBlackScholes {}
 

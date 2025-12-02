@@ -16,12 +16,10 @@
 //! * epsilon (f64): The largest acceptable error.
 
 use crate::distributions::cbnd::cbnd;
+use crate::distributions::cdf;
 use crate::european::GeneralizedBlackScholes as BS;
-use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol};
-
-fn cdf(x: f64) -> f64 {
-    crate::distributions::cdf(x, 0.0, 1.0)
-}
+use crate::fdm::FdmWithCarry;
+use crate::implied_volatility::solve_ivol;
 
 fn sqr(x: f64) -> f64 {
     x * x

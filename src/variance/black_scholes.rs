@@ -1,8 +1,6 @@
 //! Black Scholes variance analytic solutions
 
-fn cdf(x: f64) -> f64 {
-    crate::distributions::cdf(x, 0.0, 1.0)
-}
+use crate::distributions::cdf;
 
 pub struct BlackScholes {}
 

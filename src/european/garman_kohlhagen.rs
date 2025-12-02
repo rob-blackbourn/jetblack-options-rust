@@ -44,11 +44,9 @@
 //! * max_iterations (int, Optional): The maximum number of iterations before a price is returned. Defaults to 20.
 //! * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
 
-use crate::{fdm::FdmWithDividendYield, implied_volatility::solve_ivol};
-
-fn cdf(x: f64) -> f64 {
-    crate::distributions::cdf(x, 0.0, 1.0)
-}
+use crate::distributions::cdf;
+use crate::fdm::FdmWithDividendYield;
+use crate::implied_volatility::solve_ivol;
 
 pub struct GarmanKohlhagen {}
 

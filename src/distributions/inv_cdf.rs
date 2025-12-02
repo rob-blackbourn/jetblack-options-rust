@@ -131,7 +131,8 @@ pub fn inv_cdf(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::super::cdf::cdf;
+    use crate::distributions::cdf;
+
     use super::*;
 
     fn is_close_to(actual: f64, expected: f64, threshold: f64) -> bool {
@@ -245,7 +246,7 @@ mod tests {
                 0.9999683287581669,
             ),
         ] {
-            let fx0 = cdf(x, 0.0, 1.0);
+            let fx0 = cdf(x);
             assert!(is_close_to(fx0, expected_fx, f64::EPSILON));
             let x0 = inv_cdf(fx);
             assert!(is_close_to(x0, expected_x, f64::EPSILON));

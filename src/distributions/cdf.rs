@@ -3,13 +3,13 @@ use core::f64;
 use libm::erf;
 
 /// Cumulative distribution function.  P(X <= x)
-pub fn cdf(x: f64, mu: f64, sigma: f64) -> f64 {
+pub fn cumulative_distribution_function(x: f64, mu: f64, sigma: f64) -> f64 {
     if sigma < 0.0 {
         return f64::NAN; // sigma must be non-negative
     }
 
     if sigma == 0.0 {
-        return f64::NAN; // Err("cdf() not defined when sigma is zero");
+        return f64::NAN; // Err("cumulative_distribution_function() not defined when sigma is zero");
     }
 
     0.5 * (1.0 + erf((x - mu) / (sigma * f64::consts::SQRT_2)))
@@ -34,10 +34,10 @@ mod tests {
             (0.9, 0.0, 1.0, 0.8159398746532405),
             (1.0, 0.0, 1.0, 0.8413447460685429),
         ] {
-            let actual = cdf(x, mu, sigma);
+            let actual = cumulative_distribution_function(x, mu, sigma);
             assert!(
                 (expected - actual).abs() <= f64::EPSILON,
-                "cdf({}, {}, {}) -> {} (expected: {}, diff: {:e})",
+                "cumulative_distribution_function({}, {}, {}) -> {} (expected: {}, diff: {:e})",
                 x,
                 mu,
                 sigma,
