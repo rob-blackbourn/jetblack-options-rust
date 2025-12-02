@@ -2,7 +2,7 @@
 
 use std::f64::consts::PI;
 
-use super::cnd::CND;
+use crate::distributions::cdf;
 
 fn sqr(x: f64) -> f64 {
     x * x
@@ -101,7 +101,7 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
             }
             BVN = BVN * asr / (4.0 * PI);
         }
-        BVN = BVN + CND(-h) * CND(-k)
+        BVN = BVN + cdf(-h) * cdf(-k)
     } else {
         if rho < 0.0 {
             k = -k;
@@ -124,7 +124,7 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
                 BVN = BVN
                     - (-hk / 2.0).exp()
                         * (2.0 * PI).sqrt()
-                        * CND(-b / A)
+                        * cdf(-b / A)
                         * b
                         * (1.0 - c * bs * (1.0 - d * bs / 5.0) / 3.0);
             }
@@ -146,11 +146,11 @@ pub fn cbnd(x: f64, y: f64, rho: f64) -> f64 {
             BVN = -BVN / (2.0 * PI);
         }
         if rho > 0.0 {
-            BVN = BVN + CND(-f64::max(h, k));
+            BVN = BVN + cdf(-f64::max(h, k));
         } else {
             BVN = -BVN;
             if k > h {
-                BVN = BVN + CND(k) - CND(h);
+                BVN = BVN + cdf(k) - cdf(h);
             }
         }
     }

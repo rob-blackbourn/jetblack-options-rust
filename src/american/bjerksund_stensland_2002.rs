@@ -260,7 +260,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.857387269854204,
+                0.8573872698518947,
                 1e-12,
             ),
             (
@@ -293,7 +293,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.44432538850074366,
+                -0.44432538849825676,
                 1e-12,
             ),
             (
@@ -320,8 +320,22 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].delta(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, expected, threshold));
+            let actual = ng[&is_call].delta(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
+            assert!(
+                is_close_to(actual, expected, threshold),
+                "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 
@@ -342,7 +356,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.018553563609913226,
+                0.018553562721734806,
                 1e-9,
             ),
             (
@@ -353,7 +367,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.01894102808819298,
+                0.018941027661867338,
                 1e-9,
             ),
             (
@@ -386,7 +400,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.028376564245036207,
+                0.02837656552401313,
                 1e-9,
             ),
             (
@@ -402,18 +416,22 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
-            let diff = (expected - numeric).abs();
+            let actual = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
+            let diff = (expected - actual).abs();
             assert!(
                 diff < threshold,
-                "[{}].gammma({}, {}, {}, {}, {}, {})",
+                "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e}",
                 is_call,
                 S,
                 K,
                 t,
                 r,
                 b,
-                v
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
             );
         }
     }
@@ -435,7 +453,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -2.530993738452243,
+                -2.5309937384477044,
                 1e-12,
             ),
             (
@@ -457,7 +475,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -4.040856526609158,
+                -4.040856526623422,
                 1e-11,
             ),
             (
@@ -495,18 +513,22 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric =
+            let actual =
                 ng[&is_call].theta(S, K, t, r, b, v, 1.0 / 365.0, DifferenceMethod::Central);
             assert!(
-                (expected - numeric).abs() < threshold,
-                "[{}]theta({}, {}, {}, {}, {}, {})",
+                (expected - actual).abs() < threshold,
+                "[{}]theta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
                 t,
                 r,
                 b,
-                v
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
             );
         }
     }
@@ -528,7 +550,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                13.978277991237853,
+                13.9782779912494,
                 1e-11,
             ),
             (
@@ -588,17 +610,21 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].vega(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
+            let actual = ng[&is_call].vega(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(
-                is_close_to(numeric, expected, threshold),
-                "[{}].vega({}, {}, {}, {}, {}, {})",
+                is_close_to(actual, expected, threshold),
+                "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
                 t,
                 r,
                 b,
-                v
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
             );
         }
     }
@@ -631,7 +657,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -5.692145861011966,
+                -5.692145861019071,
                 1e-12,
             ),
             (
@@ -642,7 +668,7 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                25.06962040217786,
+                25.06962040216365,
                 1e-11,
             ),
             (
@@ -680,17 +706,21 @@ mod tests {
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].rho(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
+            let actual = ng[&is_call].rho(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
             assert!(
-                is_close_to(numeric, expected, threshold),
-                "[{}].rho({}, {}, {}, {}, {}, {})",
+                is_close_to(actual, expected, threshold),
+                "[{}].rho({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
                 t,
                 r,
                 b,
-                v
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
             );
         }
     }
