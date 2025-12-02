@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn it_should_calc_price() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -131,6 +131,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 11.070181515952816,
+                1e-12,
             ),
             (
                 false,
@@ -141,6 +142,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.5100272464024442,
+                1e-12,
             ),
             (
                 true,
@@ -151,6 +153,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 3.8695089570482253,
+                1e-12,
             ),
             (
                 false,
@@ -161,6 +164,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.999829098372267,
+                1e-12,
             ),
             (
                 true,
@@ -171,6 +175,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.7881686046834773,
+                1e-12,
             ),
             (
                 false,
@@ -181,11 +186,26 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 10.08179174018241,
+                1e-12,
             ),
         ] {
             let b = r - q;
             let actual = BjerksundStensland1993::price(is_call, S, K, t, r, b, v);
-            assert!(is_close_to(actual, expected, 1e-12));
+            assert!(
+                is_close_to(actual, expected, threshold),
+                "price({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 
@@ -197,7 +217,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -206,7 +226,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.8569705161634467,
+                0.8569705570700137,
+                1e-12,
             ),
             (
                 false,
@@ -216,7 +237,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.10549822644847495,
+                -0.10549818299665503,
+                1e-12,
             ),
             (
                 true,
@@ -226,7 +248,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.5404561878748382,
+                0.5404562075099761,
+                1e-12,
             ),
             (
                 false,
@@ -236,7 +259,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.4430050293766641,
+                -0.44300499281391126,
+                1e-12,
             ),
             (
                 true,
@@ -246,7 +270,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.17153014578425996,
+                0.17153010167447746,
+                1e-12,
             ),
             (
                 false,
@@ -256,12 +281,27 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                -0.9142855581178999,
+                -0.9142855883910173,
+                1e-12,
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].delta(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, expected, 1e-11));
+            let actual = ng[&is_call].delta(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
+            assert!(
+                is_close_to(actual, expected, threshold),
+                "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 
@@ -273,7 +313,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -282,7 +322,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.018450076488818468,
+                0.01845010189072127,
+                1e-12,
             ),
             (
                 false,
@@ -292,7 +333,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.018827352619155135,
+                0.01882729350199952,
+                1e-12,
             ),
             (
                 true,
@@ -302,7 +344,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.04283403384874873,
+                0.04283403143290343,
+                1e-12,
             ),
             (
                 false,
@@ -312,7 +355,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.04811970086393558,
+                0.04811973752794074,
+                1e-12,
             ),
             (
                 true,
@@ -322,7 +366,8 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.02837645780573439,
+                0.02837650470155495,
+                1e-12,
             ),
             (
                 false,
@@ -332,12 +377,27 @@ mod tests {
                 0.08,
                 6.0 / 12.0,
                 0.125,
-                0.04419040397607432,
+                0.04419043087011687,
+                1e-12,
             ),
         ] {
             let b = r - q;
-            let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, expected, 1e-9));
+            let actual = ng[&is_call].gamma(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
+            assert!(
+                is_close_to(actual, expected, 1e-9),
+                "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 }
