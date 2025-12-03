@@ -793,9 +793,24 @@ mod tests {
                 0.125,
             ),
         ] {
+            let threshold = 1e-12;
             let actual =
                 BlackScholesMerton::ivol(is_call, S, K, t, r, q, p, 100, f64::EPSILON / 2.0);
-            assert!(is_close_to(actual, expected, 1e-12));
+            assert!(
+                is_close_to(actual, expected, threshold),
+                "ivol({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                p,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 
@@ -876,12 +891,26 @@ mod tests {
             ),
         ] {
             let analytic = BlackScholesMerton::delta(is_call, S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "delta({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
 
             let numeric = ng[&is_call].delta(S, K, t, r, q, v, 0.0001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -890,7 +919,9 @@ mod tests {
                 q,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -972,12 +1003,25 @@ mod tests {
             ),
         ] {
             let analytic = BlackScholesMerton::gamma(S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "gamma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
 
             let numeric = ng[&is_call].gamma(S, K, t, r, q, v, 1e-2, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -986,7 +1030,9 @@ mod tests {
                 q,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -1068,7 +1114,21 @@ mod tests {
             ),
         ] {
             let analytic = BlackScholesMerton::theta(is_call, S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "theta({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric = ng[&is_call].theta(
                 S,
@@ -1082,7 +1142,7 @@ mod tests {
             );
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].theta({}, {}, {}, {}, {}, {}) --> {} (diff={:e})",
+                "[{}].theta({}, {}, {}, {}, {}, {}) --> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -1091,7 +1151,9 @@ mod tests {
                 q,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -1173,13 +1235,26 @@ mod tests {
             ),
         ] {
             let analytic = BlackScholesMerton::vega(S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "vega({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
 
             let numeric: f64 =
                 ng[&is_call].vega(S, K, t, r, q, v, 0.000001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -1188,7 +1263,9 @@ mod tests {
                 q,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -1270,12 +1347,26 @@ mod tests {
             ),
         ] {
             let analytic = BlackScholesMerton::rho(is_call, S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "rho({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric = ng[&is_call].rho(S, K, t, r, q, v, 0.00001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].rho({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].rho({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -1284,7 +1375,9 @@ mod tests {
                 q,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -1297,7 +1390,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1307,6 +1400,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 8.51357496716671,
+                1e-4,
             ),
             (
                 false,
@@ -1317,6 +1411,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -22.635066226567563,
+                1e-4,
             ),
             (
                 true,
@@ -1327,6 +1422,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 13.966967482182572,
+                1e-4,
             ),
             (
                 false,
@@ -1337,6 +1433,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -14.427244161400045,
+                1e-4,
             ),
             (
                 true,
@@ -1347,6 +1444,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 21.763120448838848,
+                1e-4,
             ),
             (
                 false,
@@ -1357,14 +1455,43 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -8.446279972615066,
+                1e-4,
             ),
         ] {
             let analytic = BlackScholesMerton::elasticity(is_call, S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "elasticity({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e}",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                1e-12
+            );
 
             let numeric =
                 ng[&is_call].elasticity(S, K, t, r, q, v, 0.01, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-4));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].elasticity({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 
