@@ -695,7 +695,7 @@ mod tests {
     #[test]
     fn it_should_calc_ivol() {
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, p, expected) in [
+        for (is_call, S, K, r, q, t, p, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -705,6 +705,7 @@ mod tests {
                 6.0 / 12.0,
                 11.069546131685598,
                 0.125,
+                1e-12,
             ),
             (
                 false,
@@ -715,6 +716,7 @@ mod tests {
                 6.0 / 12.0,
                 0.505650275001452,
                 0.125,
+                1e-12,
             ),
             (
                 true,
@@ -725,6 +727,7 @@ mod tests {
                 6.0 / 12.0,
                 3.8695002999527546,
                 0.125,
+                1e-12,
             ),
             (
                 false,
@@ -735,6 +738,7 @@ mod tests {
                 6.0 / 12.0,
                 2.913498834791845,
                 0.125,
+                1e-12,
             ),
             (
                 true,
@@ -745,6 +749,7 @@ mod tests {
                 6.0 / 12.0,
                 0.7881685580252977,
                 0.125,
+                1e-12,
             ),
             (
                 false,
@@ -755,12 +760,27 @@ mod tests {
                 6.0 / 12.0,
                 9.344461337871536,
                 0.125,
+                1e-12,
             ),
         ] {
             let b = r - q;
             let actual =
                 GeneralizedBlackScholes::ivol(is_call, S, K, t, r, b, p, 100, f64::EPSILON / 2.0);
-            assert!(is_close_to(actual, expected, 1e-12));
+            assert!(
+                is_close_to(actual, expected, threshold),
+                "ivol({}, {}, {}, {}, {}, {}, {}) -> {} ( expected: {}, diff: {:e}, expected: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                p,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                threshold
+            );
         }
     }
 
@@ -842,12 +862,26 @@ mod tests {
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::delta(is_call, S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "delta({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
 
             let numeric = ng[&is_call].delta(S, K, t, r, b, v, 1e-4, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].delta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -856,7 +890,9 @@ mod tests {
                 b,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -939,12 +975,25 @@ mod tests {
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::gamma(S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "gamma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric = ng[&is_call].gamma(S, K, t, r, b, v, 0.01, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].gamma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -953,7 +1002,9 @@ mod tests {
                 b,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -1036,7 +1087,21 @@ mod tests {
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::theta(is_call, S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "theta({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric = ng[&is_call].theta(
                 S,
@@ -1050,7 +1115,7 @@ mod tests {
             );
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].theta({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].theta({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -1059,7 +1124,9 @@ mod tests {
                 b,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -1142,12 +1209,25 @@ mod tests {
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::vega(S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "vega({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric = ng[&is_call].vega(S, K, t, r, b, v, 1e-5, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
-                "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (diff={:e})",
+                "[{}].vega({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
                 is_call,
                 S,
                 K,
@@ -1156,7 +1236,9 @@ mod tests {
                 b,
                 v,
                 numeric,
-                analytic - numeric
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
             );
         }
     }
@@ -1239,7 +1321,21 @@ mod tests {
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::rho(is_call, S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, f64::EPSILON));
+            assert!(
+                is_close_to(analytic, expected, f64::EPSILON),
+                "rho({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric = ng[&is_call].rho(S, K, t, r, b, v, 1e-6, DifferenceMethod::Central);
             assert!(
@@ -1266,7 +1362,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1276,6 +1372,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 8.51357496716671,
+                1e-4,
             ),
             (
                 false,
@@ -1286,6 +1383,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -22.635066226567563,
+                1e-4,
             ),
             (
                 true,
@@ -1296,6 +1394,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 13.966967482182572,
+                1e-4,
             ),
             (
                 false,
@@ -1306,6 +1405,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -14.427244161400045,
+                1e-4,
             ),
             (
                 true,
@@ -1316,6 +1416,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 21.763120448838848,
+                1e-4,
             ),
             (
                 false,
@@ -1326,15 +1427,44 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -8.446279972615066,
+                1e-4,
             ),
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::elasticity(is_call, S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "elasticity({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                f64::EPSILON
+            );
 
             let numeric =
                 ng[&is_call].elasticity(S, K, t, r, b, v, 1e-4, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-4));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].elasticity({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                numeric,
+                analytic,
+                (expected - analytic).abs(),
+                threshold
+            );
         }
     }
 
