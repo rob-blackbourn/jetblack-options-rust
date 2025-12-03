@@ -1476,7 +1476,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1486,6 +1486,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.06138389948689551,
+                1e-4,
             ),
             (
                 false,
@@ -1496,6 +1497,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.06138389948689551,
+                1e-4,
             ),
             (
                 true,
@@ -1506,6 +1508,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.338939132019472,
+                1e-4,
             ),
             (
                 false,
@@ -1516,6 +1519,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.338939132019472,
+                1e-4,
             ),
             (
                 true,
@@ -1526,6 +1530,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.01597963672325094,
+                1e-4,
             ),
             (
                 false,
@@ -1536,15 +1541,29 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.01597963672325094,
+                1e-4,
             ),
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::dgamma_dvol(S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "dgamma_dvol({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric =
                 ng[&is_call].dgamma_dvol(S, K, t, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-4));
+            assert!(is_close_to(numeric, analytic, threshold));
         }
     }
 
