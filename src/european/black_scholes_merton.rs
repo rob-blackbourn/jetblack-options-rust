@@ -1739,7 +1739,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1749,6 +1749,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.23306930617480232,
+                1e-5,
             ),
             (
                 false,
@@ -1759,6 +1760,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.15620615104261645,
+                1e-5,
             ),
             (
                 true,
@@ -1769,6 +1771,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.01632708081503694,
+                1e-5,
             ),
             (
                 false,
@@ -1779,6 +1782,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.0931902359472228,
+                1e-5,
             ),
             (
                 true,
@@ -1789,6 +1793,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.2961949663176757,
+                1e-5,
             ),
             (
                 false,
@@ -1799,10 +1804,25 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.37305812144986156,
+                1e-5,
             ),
         ] {
             let analytic = BlackScholesMerton::charm(is_call, S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "charm({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                1e-12
+            );
 
             let numeric = ng[&is_call].charm(
                 S,
@@ -1815,7 +1835,21 @@ mod tests {
                 1.0 / 365.0,
                 DifferenceMethod::Central,
             );
-            assert!(is_close_to(numeric, analytic, 1e-5));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].charm({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 
@@ -1905,7 +1939,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1915,6 +1949,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 157.585192593357,
+                1e-2,
             ),
             (
                 false,
@@ -1925,6 +1960,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 157.585192593357,
+                1e-2,
             ),
             (
                 true,
@@ -1935,6 +1971,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.3229659194725993,
+                1e-2,
             ),
             (
                 false,
@@ -1945,6 +1982,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.3229659194725993,
+                1e-2,
             ),
             (
                 true,
@@ -1955,6 +1993,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 131.8949386725222,
+                1e-2,
             ),
             (
                 false,
@@ -1965,13 +2004,41 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 131.8949386725222,
+                1e-2,
             ),
         ] {
             let analytic = BlackScholesMerton::vomma(S, K, t, r, q, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "vomma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                1e-12
+            );
 
             let numeric = ng[&is_call].vomma(S, K, t, r, q, v, 0.001, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-2));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].vomma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                q,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 }
