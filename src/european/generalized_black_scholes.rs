@@ -1563,7 +1563,21 @@ mod tests {
 
             let numeric =
                 ng[&is_call].dgamma_dvol(S, K, t, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, threshold));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].dgamma_dvol({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 
@@ -1654,7 +1668,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1664,6 +1678,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.639625858611978,
+                1e-4,
             ),
             (
                 false,
@@ -1674,6 +1689,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.639625858611978,
+                1e-4,
             ),
             (
                 true,
@@ -1684,6 +1700,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.2088059253458516,
+                1e-4,
             ),
             (
                 false,
@@ -1694,6 +1711,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.2088059253458516,
+                1e-4,
             ),
             (
                 true,
@@ -1704,6 +1722,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.0253158998215026,
+                1e-4,
             ),
             (
                 false,
@@ -1714,15 +1733,43 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.0253158998215026,
+                1e-4,
             ),
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::vanna(S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "vanna({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                1e-12
+            );
 
             let numeric =
                 ng[&is_call].vanna(S, K, t, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-4));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].vanna({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 
@@ -1734,7 +1781,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1744,6 +1791,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.23306930617480232,
+                1e-5,
             ),
             (
                 false,
@@ -1754,6 +1802,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 0.15620615104261645,
+                1e-5,
             ),
             (
                 true,
@@ -1764,6 +1813,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.01632708081503694,
+                1e-5,
             ),
             (
                 false,
@@ -1774,6 +1824,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.0931902359472228,
+                1e-5,
             ),
             (
                 true,
@@ -1784,6 +1835,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.2961949663176757,
+                1e-5,
             ),
             (
                 false,
@@ -1794,11 +1846,26 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.37305812144986156,
+                1e-5,
             ),
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::charm(is_call, S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "charm({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                threshold
+            );
 
             let numeric = ng[&is_call].charm(
                 S,
@@ -1811,7 +1878,21 @@ mod tests {
                 1.0 / 365.0,
                 DifferenceMethod::Central,
             );
-            assert!(is_close_to(numeric, analytic, 1e-5));
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].charm({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 
