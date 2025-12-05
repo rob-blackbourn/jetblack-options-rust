@@ -1,4 +1,4 @@
-//! Option calculators using tree methods.
+//! Option calculators using tree methods
 
 mod greeks;
 pub use greeks::Greeks;

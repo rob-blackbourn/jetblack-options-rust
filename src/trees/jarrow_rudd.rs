@@ -1,12 +1,10 @@
-//! Jarrow-Rudd binomial option pricing
-
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
 
+/// # Jarrow & Rudd
+///
 /// Option valuations using a Jarrow-Rudd binomial pricing tree.
 pub struct JarrowRudd {}
 
-/// An implementation of a binomial pricing tree using the Jarrow Rudd method.
-///
 /// The following arguments are common
 ///
 /// * is_european (bool): Tue for European, false for American.
@@ -22,7 +20,7 @@ pub struct JarrowRudd {}
 /// * max_iterations (usize): The maximum number of iterations before a price is returned.
 /// * epsilon (f64): The largest acceptable error.
 impl JarrowRudd {
-    /// Calculate the price and some greeks using a Jarrow-Rudd binomial option pricing tree.
+    /// The greeks of an option using a Jarrow-Rudd binomial pricing tree.
     #[allow(non_snake_case)]
     pub fn greeks(
         is_european: bool,

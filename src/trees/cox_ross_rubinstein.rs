@@ -1,13 +1,13 @@
-//! Cox, Ross & Rubinstein
+use crate::fdm::FdmWithCarry;
+use crate::implied_volatility::solve_ivol;
+use crate::trees::Greeks;
 
-use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
-
+/// # Cox, Ross & Rubinstein
+///
 /// Option valuation implementations using the Cox, Ross & Rubinstein
 /// binomial tree.
 pub struct CoxRossRubinstein {}
 
-/// An implementation of a Cox, Ross & Rubinstein binomial tree model.
-///
 /// The following arguments are common:
 ///
 /// * is_european (bool): True for European, false for American.
@@ -23,7 +23,7 @@ pub struct CoxRossRubinstein {}
 /// * max_iterations (usize): The maximum number of iterations before a price is returned.
 /// * epsilon (f64): The largest acceptable error.
 impl CoxRossRubinstein {
-    /// A Cox-Ross-Rubinstein binomial tree option pricer returning the price and some greeks.
+    /// The greeks of an option using a Cox-Ross-Rubinstein binomial tree.
     #[allow(non_snake_case)]
     pub fn greeks(
         is_european: bool,

@@ -1,23 +1,22 @@
-//! Calculating numeric greeks for options using finite difference methods for pricers without carry or dividend yield.
-//!
-//! The following arguments are common.
-//!
-//! * S (f64): The asset price.
-//! * K (f64): the strike price.
-//! * t (f64): The time to expiry in years.
-//! * r (f64): the risk free rate.
-//! * v (f64): The volatility.
-//! * dS (f64): The asset price bump. A common choice is 0.01.
-//! * method (DifferenceMethod): The difference method. A common choice is Central.
-
 use crate::fdm::DifferenceMethod;
 
+/// # Calculating greeks using finite difference methods for pricers without carry
+///
 /// A struct for calculating option sensitivities using finite difference methods for pricers without carry or dividend yield.
 pub struct FdmWithoutCarry<'a> {
     /// fn price(S: 64, K: f64, t, r: f64, v: f64) -> f64
     pub price: Box<dyn Fn(f64, f64, f64, f64, f64) -> f64 + 'a>,
 }
 
+/// The following arguments are common.
+///
+/// * S (f64): The asset price.
+/// * K (f64): the strike price.
+/// * t (f64): The time to expiry in years.
+/// * r (f64): the risk free rate.
+/// * v (f64): The volatility.
+/// * dS (f64): The asset price bump. A common choice is 0.01.
+/// * method (DifferenceMethod): The difference method. A common choice is Central.
 impl<'a> FdmWithoutCarry<'a> {
     pub fn new(price: impl Fn(f64, f64, f64, f64, f64) -> f64 + 'a) -> Self {
         FdmWithoutCarry {
