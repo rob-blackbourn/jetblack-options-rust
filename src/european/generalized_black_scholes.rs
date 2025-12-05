@@ -1983,7 +1983,7 @@ mod tests {
         ]);
 
         #[allow(non_snake_case)]
-        for (is_call, S, K, r, q, t, v, expected) in [
+        for (is_call, S, K, r, q, t, v, expected, threshold) in [
             (
                 true,
                 110.0,
@@ -1993,6 +1993,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 157.585192593357,
+                1e-5,
             ),
             (
                 false,
@@ -2003,6 +2004,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 157.585192593357,
+                1e-4,
             ),
             (
                 true,
@@ -2013,6 +2015,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.32296591947259933,
+                1e-7,
             ),
             (
                 false,
@@ -2023,6 +2026,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.3229659194725993,
+                1e-6,
             ),
             (
                 true,
@@ -2033,6 +2037,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 131.8949386725222,
+                1e-4,
             ),
             (
                 false,
@@ -2043,14 +2048,42 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 131.8949386725222,
+                1e-4,
             ),
         ] {
             let b = r - q;
             let analytic = GeneralizedBlackScholes::vomma(S, K, t, r, b, v);
-            assert!(is_close_to(analytic, expected, 1e-12));
+            assert!(
+                is_close_to(analytic, expected, 1e-12),
+                "vomma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                analytic,
+                expected,
+                (expected - analytic).abs(),
+                1e-12
+            );
 
-            let numeric = ng[&is_call].vomma(S, K, t, r, b, v, 0.001, DifferenceMethod::Central);
-            assert!(is_close_to(numeric, analytic, 1e-2));
+            let numeric = ng[&is_call].vomma(S, K, t, r, b, v, 0.0001, DifferenceMethod::Central);
+            assert!(
+                is_close_to(numeric, analytic, threshold),
+                "[{}].vomma({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                numeric,
+                analytic,
+                (analytic - numeric).abs(),
+                threshold
+            );
         }
     }
 }
