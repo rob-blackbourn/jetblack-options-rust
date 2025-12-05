@@ -1,35 +1,38 @@
-//! Black-Scholes-Merton options pricing formulae using dividend yield.
-//!
-//! * Stock price $ S $,
-//! * Strike price $ K $,
-//! * Risk-free rate $ r $,
-//! * Annual dividend yield $ q $,
-//! * Time to maturity $ \tau = t - t $
-//! * Volatility $ \sigma $.
-//!
-//! where:
-//!
-//! $$
-//! d_1 = \frac{\ln(S/K) + \left(r - q + \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}}
-//! $$
-//!
-//! $$
-//! d_2 = \frac{\ln(S/K) + \left(r - q - \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}} = d_1 - \sigma\sqrt{\tau}
-//! $$
-//!
-//! $$
-//! \varphi(x) = \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
-//! $$
-//!
-//! $$
-//! \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
-//! $$
-
 use std::f64::consts::PI;
 
 use crate::distributions::{cdf, inv_cdf, pdf};
 use crate::fdm::FdmWithDividendYield;
 use crate::implied_volatility::solve_ivol;
+
+/// # Black, Scholes & Merton
+///
+/// Options pricing formulae using dividend yield.
+///
+/// * Stock price $ S $,
+/// * Strike price $ K $,
+/// * Risk-free rate $ r $,
+/// * Annual dividend yield $ q $,
+/// * Time to maturity $ \tau = t - t $
+/// * Volatility $ \sigma $.
+///
+/// where:
+///
+/// $$
+/// d_1 = \frac{\ln(S/K) + \left(r - q + \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}}
+/// $$
+///
+/// $$
+/// d_2 = \frac{\ln(S/K) + \left(r - q - \frac{1}{2}\sigma^2\right)\tau}{\sigma\sqrt{\tau}} = d_1 - \sigma\sqrt{\tau}
+/// $$
+///
+/// $$
+/// \varphi(x) = \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
+/// $$
+///
+/// $$
+/// \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
+/// $$
+pub struct BlackScholesMerton {}
 
 /// The following arguments have common meanings.
 ///
@@ -42,10 +45,8 @@ use crate::implied_volatility::solve_ivol;
 /// * v (f64): The volatility of the asset.
 /// * max_iterations (usize): The maximum number of iterations before a price is returned. Defaults to 20.
 /// * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
-pub struct BlackScholesMerton {}
-
 impl BlackScholesMerton {
-    /// The fair value of a European option, using Black-Scholes-Merton.
+    /// The fair value of a European option using Black, Scholes & Merton.
     ///
     /// Call price: $Se^{-q \tau}\Phi(d_1) - e^{-r \tau} K\Phi(d_2)$
     ///

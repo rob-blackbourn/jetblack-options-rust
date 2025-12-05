@@ -1,20 +1,3 @@
-//! # Option valuation functions implementing the Bjerksund and Stensland (2002)
-//!
-//! American approximation
-//!
-//! The following arguments are common:
-//!
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The current asset price.
-//! * K (f64): The option strike price
-//! * t (f64): The time to maturity of the option in years.
-//! * r (f64): The risk free rate.
-//! * b (f64): The cost of carry of the asset.
-//! * v (f64): The volatility of the asset.
-//! * p (f64): The option price.
-//! * max_iterations (usize): The maximum number of iterations before a price is returned.
-//! * epsilon (f64): The largest acceptable error.
-
 use crate::distributions::cbnd::cbnd;
 use crate::distributions::cdf;
 use crate::european::GeneralizedBlackScholes as BS;
@@ -25,11 +8,26 @@ fn sqr(x: f64) -> f64 {
     x * x
 }
 
+/// # Option valuation functions using Bjerksund and Stensland (2002)
+///
+/// American approximation
 pub struct BjerksundStensland2002 {}
 
+/// The following arguments are common:
+///
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * t (f64): The time to maturity of the option in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry of the asset.
+/// * v (f64): The volatility of the asset.
+/// * p (f64): The option price.
+/// * max_iterations (usize): The maximum number of iterations before a price is returned.
+/// * epsilon (f64): The largest acceptable error.
 impl BjerksundStensland2002 {
     #[allow(non_snake_case)]
-    fn _phi(S: f64, t: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn phi(S: f64, t: f64, gamma_: f64, h: f64, i: f64, r: f64, b: f64, v: f64) -> f64 {
         let lambda_ = (-r + gamma_ * b + 0.5 * gamma_ * (gamma_ - 1.0) * (v * v)) * t;
         let d = -((S / h).ln() + (b + (gamma_ - 0.5) * (v * v)) * t) / (v * t.sqrt());
         let kappa = 2.0 * b / (v * v) + 2.0 * gamma_ - 1.0;
@@ -39,7 +37,7 @@ impl BjerksundStensland2002 {
     }
 
     #[allow(non_snake_case)]
-    fn _ksi(
+    fn ksi(
         S: f64,
         t2: f64,
         gamma_: f64,
@@ -79,7 +77,7 @@ impl BjerksundStensland2002 {
     }
 
     #[allow(non_snake_case)]
-    fn _call_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn call_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         let t1 = 1.0 / 2.0 * (f64::sqrt(5.0) - 1.0) * t;
 
         if b >= r {
@@ -103,28 +101,28 @@ impl BjerksundStensland2002 {
             S - K
         } else {
             return alfa2 * f64::powf(S, beta)
-                - alfa2 * BjerksundStensland2002::_phi(S, t1, beta, I2, I2, r, b, v)
-                + BjerksundStensland2002::_phi(S, t1, 1.0, I2, I2, r, b, v)
-                - BjerksundStensland2002::_phi(S, t1, 1.0, I1, I2, r, b, v)
-                - K * BjerksundStensland2002::_phi(S, t1, 0.0, I2, I2, r, b, v)
-                + K * BjerksundStensland2002::_phi(S, t1, 0.0, I1, I2, r, b, v)
-                + alfa1 * BjerksundStensland2002::_phi(S, t1, beta, I1, I2, r, b, v)
-                - alfa1 * BjerksundStensland2002::_ksi(S, t, beta, I1, I2, I1, t1, r, b, v)
-                + BjerksundStensland2002::_ksi(S, t, 1.0, I1, I2, I1, t1, r, b, v)
-                - BjerksundStensland2002::_ksi(S, t, 1.0, K, I2, I1, t1, r, b, v)
-                - K * BjerksundStensland2002::_ksi(S, t, 0.0, I1, I2, I1, t1, r, b, v)
-                + K * BjerksundStensland2002::_ksi(S, t, 0.0, K, I2, I1, t1, r, b, v);
+                - alfa2 * BjerksundStensland2002::phi(S, t1, beta, I2, I2, r, b, v)
+                + BjerksundStensland2002::phi(S, t1, 1.0, I2, I2, r, b, v)
+                - BjerksundStensland2002::phi(S, t1, 1.0, I1, I2, r, b, v)
+                - K * BjerksundStensland2002::phi(S, t1, 0.0, I2, I2, r, b, v)
+                + K * BjerksundStensland2002::phi(S, t1, 0.0, I1, I2, r, b, v)
+                + alfa1 * BjerksundStensland2002::phi(S, t1, beta, I1, I2, r, b, v)
+                - alfa1 * BjerksundStensland2002::ksi(S, t, beta, I1, I2, I1, t1, r, b, v)
+                + BjerksundStensland2002::ksi(S, t, 1.0, I1, I2, I1, t1, r, b, v)
+                - BjerksundStensland2002::ksi(S, t, 1.0, K, I2, I1, t1, r, b, v)
+                - K * BjerksundStensland2002::ksi(S, t, 0.0, I1, I2, I1, t1, r, b, v)
+                + K * BjerksundStensland2002::ksi(S, t, 0.0, K, I2, I1, t1, r, b, v);
         }
     }
 
-    /// The Bjerksund and Stensland (2002) American approximation.
+    /// The fair value of an American option using Bjerksund and Stensland (2002).
     #[allow(non_snake_case)]
     pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         if is_call {
-            BjerksundStensland2002::_call_price(S, K, t, r, b, v)
+            BjerksundStensland2002::call_price(S, K, t, r, b, v)
         } else {
             // Use the Bjerksund and Stensland put-call transformation
-            BjerksundStensland2002::_call_price(K, S, t, r - b, -b, v)
+            BjerksundStensland2002::call_price(K, S, t, r - b, -b, v)
         }
     }
 

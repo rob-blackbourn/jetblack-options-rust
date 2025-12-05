@@ -1,17 +1,3 @@
-//! Option pricing functions implementing the Barone, Adesi and Whaley (1987)
-//!
-//! American approximation.
-//!
-//! The following arguments are common.
-//!
-//! * K (f64): The strike.
-//! * t (f64): The time to expiry in years.
-//! * r (f64): The risk free rate.
-//! * b (f64): The asset growth.
-//! * v (f64): The volatility.
-//! * max_iterations (usize): The maximum number of iterations before a price is returned.
-//! * epsilon (f64): The largest acceptable error.
-
 use crate::distributions::{cdf, pdf};
 use crate::european::GeneralizedBlackScholes as BS;
 use crate::fdm::FdmWithCarry;
@@ -21,12 +7,24 @@ fn sqr(x: f64) -> f64 {
     x * x
 }
 
+/// # Option pricing functions using Barone, Adesi and Whaley (1987)
+///
+/// American approximation.
 pub struct BaroneAdesiWhaley {}
 
+/// The following arguments are common.
+///
+/// * K (f64): The strike.
+/// * t (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The asset growth.
+/// * v (f64): The volatility.
+/// * max_iterations (usize): The maximum number of iterations before a price is returned.
+/// * epsilon (f64): The largest acceptable error.
 impl BaroneAdesiWhaley {
-    /// Newton Raphson algorithm to solve for the critical commodity price for a call.
+    /// Solve for the critical commodity price for a call using the Newton Raphson algorithm.
     #[allow(non_snake_case)]
-    fn _kc(K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn kc(K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         // Calculate the seed value Si
         let n = 2.0 * b / (v * v);
         let m = 2.0 * r / (v * v);
@@ -59,12 +57,12 @@ impl BaroneAdesiWhaley {
     }
 
     #[allow(non_snake_case)]
-    fn _call_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn call_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         if b >= r {
             return BS::price(true, S, K, t, r, b, v);
         }
 
-        let Sk = BaroneAdesiWhaley::_kc(K, t, r, b, v);
+        let Sk = BaroneAdesiWhaley::kc(K, t, r, b, v);
         let n = 2.0 * b / (v * v);
         let k = 2.0 * r / ((v * v) * (1.0 - (-r * t).exp()));
         let d1 = ((Sk / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
@@ -77,9 +75,9 @@ impl BaroneAdesiWhaley {
         }
     }
 
-    /// Newton Raphson algorithm to solve for the critical commodity price for a put.
+    /// Solve for the critical commodity price for a put using the Newton Raphson algorithm.
     #[allow(non_snake_case)]
-    fn _kp(K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+    fn kp(K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         // Calculation of seed value, Si
         let n = 2.0 * b / (v * v);
         let m = 2.0 * r / (v * v);
@@ -97,6 +95,7 @@ impl BaroneAdesiWhaley {
         let mut bi = -((b - r) * t).exp() * cdf(-d1) * (1.0 - 1.0 / q1)
             - (1.0 + ((b - r) * t).exp() * pdf(-d1) / (v * t.sqrt())) / q1;
         let epsilon = 0.000001;
+
         // Using the Newton Raphson algorithm, solve for Si.
         while f64::abs(lhs - rhs) / K > epsilon {
             Si = (K - rhs + bi * Si) / (1.0 + bi);
@@ -112,8 +111,8 @@ impl BaroneAdesiWhaley {
     }
 
     #[allow(non_snake_case)]
-    fn _put_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
-        let Sk = BaroneAdesiWhaley::_kp(K, t, r, b, v);
+    fn put_price(S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
+        let Sk = BaroneAdesiWhaley::kp(K, t, r, b, v);
         let n = 2.0 * b / (v * v);
         let k = 2.0 * r / ((v * v) * (1.0 - (-r * t).exp()));
         let d1 = ((Sk / K).ln() + (b + (v * v) / 2.0) * t) / (v * t.sqrt());
@@ -127,13 +126,13 @@ impl BaroneAdesiWhaley {
         }
     }
 
-    /// The Barone-Adesi and Whaley (1987) American approximation.
+    /// The fair value of an American option using Barone, Adesi & Whaley.
     #[allow(non_snake_case)]
     pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         if is_call {
-            BaroneAdesiWhaley::_call_price(S, K, t, r, b, v)
+            BaroneAdesiWhaley::call_price(S, K, t, r, b, v)
         } else {
-            BaroneAdesiWhaley::_put_price(S, K, t, r, b, v)
+            BaroneAdesiWhaley::put_price(S, K, t, r, b, v)
         }
     }
 
