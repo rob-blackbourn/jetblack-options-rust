@@ -1,7 +1,6 @@
-//! Black Scholes variance analytic solutions
-
 use crate::distributions::cdf;
 
+/// Black Scholes variance analytic solutions
 pub struct BlackScholes {}
 
 impl BlackScholes {

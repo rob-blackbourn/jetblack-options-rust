@@ -1,7 +1,7 @@
-//! # Class for calculating numeric greeks for options using finite difference methods for pricers using dividend yield.
-
 use crate::fdm::DifferenceMethod;
 
+/// # Calculating greeks using finite difference methods for pricers with dividend yield
+///
 /// A struct for calculating option sensitivities using finite difference methods for pricers using dividend yield.
 pub struct FdmWithDividendYield<'a> {
     /// The pricing function.

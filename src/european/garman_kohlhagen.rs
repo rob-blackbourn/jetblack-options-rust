@@ -2,7 +2,7 @@ use crate::distributions::cdf;
 use crate::fdm::FdmWithDividendYield;
 use crate::implied_volatility::solve_ivol;
 
-/// # Garman & Kohlhagen (1983) Currency options.
+/// # Garman & Kohlhagen (1983) Currency options
 ///
 /// The value of a call option.
 ///

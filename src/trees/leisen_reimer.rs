@@ -1,12 +1,14 @@
-//! Leisen Reimer binomial option pricing.
-
-use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
+use crate::fdm::FdmWithCarry;
+use crate::implied_volatility::solve_ivol;
+use crate::trees::Greeks;
 
 fn sqr(x: f64) -> f64 {
     x * x
 }
 
-/// Option valuations using the Leisen Reimer method.
+/// # Leisen & Reimer.
+///
+/// Option valuations using the Leisen Reimer binomial method.
 pub struct LeisenReimer {}
 
 /// The following arguments are common.

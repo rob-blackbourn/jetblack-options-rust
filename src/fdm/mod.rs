@@ -1,4 +1,4 @@
-//! Finite difference methods.
+//! Finite difference methods
 //!
 //! This modules contains several implementations of
 //! finite difference method calculators.

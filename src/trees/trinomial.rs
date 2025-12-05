@@ -1,5 +1,3 @@
-//! # Option valuations using a trinomial tree.
-
 use std::cmp::max;
 
 use crate::{fdm::FdmWithCarry, implied_volatility::solve_ivol, trees::Greeks};
@@ -16,6 +14,8 @@ fn ipow(x: f64, p: i32) -> f64 {
     sum
 }
 
+/// # Trinomial Tree
+///
 /// Option valuations using a trinomial tree.
 pub struct Trinomial {}
 
@@ -34,7 +34,7 @@ pub struct Trinomial {}
 /// * max_iterations (usize): The maximum number of iterations before a price is returned.
 /// * epsilon (f64): The largest acceptable error.
 impl Trinomial {
-    /// A trinomial tree options pricer returning the price and some greeks.
+    /// The greeks of a European/American option using a trinomial tree.
     #[allow(non_snake_case)]
     pub fn greeks(
         is_european: bool,

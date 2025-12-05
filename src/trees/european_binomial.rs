@@ -1,14 +1,12 @@
-//! European binomial
-
 use crate::{
     distributions::binomial_coefficient::comb, fdm::FdmWithCarry, implied_volatility::solve_ivol,
 };
 
+/// # European Binomial
+///
 /// Optional valuation with a European binomial implementation.
 pub struct EuropeanBinomial {}
 
-/// An implementation of a European binomial tree option pricer.
-///
 /// The following arguments are common.
 ///
 /// * is_call (bool): True for a call, false for a put.
@@ -23,7 +21,7 @@ pub struct EuropeanBinomial {}
 /// * max_iterations (u64): The maximum number of iterations before a price is returned. Defaults to 20.
 /// * epsilon (f64): The largest acceptable error. Defaults to 1e-8.
 impl EuropeanBinomial {
-    /// The fair value.
+    /// The fair value or a European option using a binomial tree.
     #[allow(non_snake_case)]
     pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64, n: u64) -> f64 {
         let dt = t / n as f64;
