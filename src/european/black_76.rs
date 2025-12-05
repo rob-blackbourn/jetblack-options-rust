@@ -1,34 +1,36 @@
-//! # Black (1976) Options on futures/forwards
-//!
-//!
-//! * The discounted futures price $ F $,
-//! * Strike price $ K $,
-//! * Risk-free rate $ r $,
-//! * Annual dividend yield $ q $,
-//! * Time to maturity $ \tau = t - t $
-//! * Volatility $ \sigma $.
-//!
-//! Most of the formula use one or both of the following terms.
-//!
-//! $$
-//! d_1 = \frac{\ln(F/K) + (\sigma^2/2)t}{\sigma\sqrt{t}}
-//! $$
-//!
-//! $$
-//! d_2 = \frac{\ln(F/K) - (\sigma^2/2)t}{\sigma\sqrt{t}} = d_1 - \sigma\sqrt{t}
-//! $$
-//!
-//! $$
-//! \varphi(x) &= \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
-//! $$
-//!
-//! $$
-//! \Phi(x) &= \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
-//! $$
-
 use crate::distributions::{cdf, pdf};
 use crate::fdm::FdmWithoutCarry;
 use crate::implied_volatility::solve_ivol;
+
+/// # Black (1976)
+///
+/// Options on futures/forwards.
+///
+/// * The discounted futures price $ F $,
+/// * Strike price $ K $,
+/// * Risk-free rate $ r $,
+/// * Annual dividend yield $ q $,
+/// * Time to maturity $ \tau = t - t $
+/// * Volatility $ \sigma $.
+///
+/// Most of the formula use one or both of the following terms.
+///
+/// $$
+/// d_1 = \frac{\ln(F/K) + (\sigma^2/2)t}{\sigma\sqrt{t}}
+/// $$
+///
+/// $$
+/// d_2 = \frac{\ln(F/K) - (\sigma^2/2)t}{\sigma\sqrt{t}} = d_1 - \sigma\sqrt{t}
+/// $$
+///
+/// $$
+/// \varphi(x) &= \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2} x^2}
+/// $$
+///
+/// $$
+/// \Phi(x) &= \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
+/// $$
+pub struct Black76 {}
 
 /// The following arguments are used in this module.
 ///
@@ -40,10 +42,8 @@ use crate::implied_volatility::solve_ivol;
 /// * v (f64): The asset volatility.
 /// * max_iterations (usize): The maximum number of iterations before a price is returned.
 /// * epsilon (f64): The largest acceptable error.
-pub struct Black76 {}
-
 impl Black76 {
-    /// Fair value of a futures/forward using Black 76.
+    /// The fair value of an option on a futures/forward using Black 76.
     ///
     /// For a call:
     ///

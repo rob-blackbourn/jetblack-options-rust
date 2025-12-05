@@ -1,36 +1,34 @@
-//! # Black-Scholes 1973.
-//!
-//! The original Black-Scholes option formula for an option on a non-dividend
-//! paying stock option.
-//!
-//! $$
-//! d_1 = \frac{1}{\sigma\sqrt{t - t}}\left[\ln\left(\frac{S_t}{K}\right) + \left(r + \frac{\sigma^2}{2}\right)(t - t)\right]
-//! $$
-//!
-//! $$
-//! d_2 = d_1 - \sigma\sqrt{t - t}
-//! $$
-//!
-//! The following arguments are common.
-//!
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The asset price.
-//! * K (f64): The strike price.
-//! * t (f64): The time to expiry in years.
-//! * r (f64): The risk free rate.
-//! * v (f64): The asset volatility.
-//! * max_iterations (usize): The maximum number of iterations before
-//!       a price is returned.
-//! * epsilon (f64): The largest acceptable error.
-
 use crate::distributions::{cdf, pdf};
 use crate::fdm::FdmWithoutCarry;
 use crate::implied_volatility::solve_ivol;
 
+/// # Black & Scholes (1973)
+///
+/// The original Black-Scholes option formula for an option on a non-dividend
+/// paying stock option.
+///
+/// $$
+/// d_1 = \frac{1}{\sigma\sqrt{t - t}}\left[\ln\left(\frac{S_t}{K}\right) + \left(r + \frac{\sigma^2}{2}\right)(t - t)\right]
+/// $$
+///
+/// $$
+/// d_2 = d_1 - \sigma\sqrt{t - t}
+/// $$
 pub struct BlackScholes73 {}
 
+/// The following arguments are common.
+///
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The asset price.
+/// * K (f64): The strike price.
+/// * t (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The asset volatility.
+/// * max_iterations (usize): The maximum number of iterations before
+///       a price is returned.
+/// * epsilon (f64): The largest acceptable error.
 impl BlackScholes73 {
-    /// The Black-Scholes price for a non-dividend paying stock.
+    /// The fair value of a European option on a non-dividend paying stock using Black-Scholes (1973)
     ///
     /// $$
     /// C(S_t, t) = N(d_1)S_t - N(d_2)Ke^{-r(t - t)}

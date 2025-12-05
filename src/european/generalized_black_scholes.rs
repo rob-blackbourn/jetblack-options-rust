@@ -1,36 +1,34 @@
-//! # Black-Scholes-Merton options pricing formulae.
-//!
-//! This is the "generalised" version using "cost of carry" (variable b).
-//!
-//! The cost of carry rate (b) is:
-//!
-//! * b == r: for non dividend paying stocks
-//! * b == r - q: For dividend paying stocks where the dividend yield is q
-//! * b == 0: for futures options
-//! * b = r - rj: for currency options.
-//!
-//! The following arguments are common.
-//!
-//! * is_call (bool): True for a call, false for a put.
-//! * S (f64): The current asset price.
-//! * K (f64): The option strike price
-//! * t (f64): The time to expiry of the option in years.
-//! * r (f64): The risk free rate.
-//! * b (f64): The cost of carry of the asset.
-//! * v (f64): The volatility of the asset.
-//! * max_iterations (int, Optional): The maximum number of iterations before a price is returned. Defaults to 20.
-//! * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
-
 use std::f64::consts::PI;
 
 use crate::distributions::{cdf, inv_cdf, pdf};
 use crate::fdm::FdmWithCarry;
 use crate::implied_volatility::solve_ivol;
 
+/// # Black, Scholes & Merton
+///
+/// This is the "generalized" version using "cost of carry" (variable b).
+///
+/// The cost of carry rate (b) is:
+///
+/// * b = r -- for non dividend paying stocks
+/// * b = r - q -- For dividend paying stocks where the dividend yield is q
+/// * b = 0 -- for futures options
+/// * b = r - rj -- for currency options.
 pub struct GeneralizedBlackScholes {}
 
+/// The following arguments are common.
+///
+/// * is_call (bool): True for a call, false for a put.
+/// * S (f64): The current asset price.
+/// * K (f64): The option strike price
+/// * t (f64): The time to expiry of the option in years.
+/// * r (f64): The risk free rate.
+/// * b (f64): The cost of carry of the asset.
+/// * v (f64): The volatility of the asset.
+/// * max_iterations (int, Optional): The maximum number of iterations before a price is returned. Defaults to 20.
+/// * epsilon (f64, Optional): The largest acceptable error. Defaults to 1e-8.
 impl GeneralizedBlackScholes {
-    /// The fair value of a European option, using Black-Scholes-Merton.
+    /// The fair value of a European option, using Black,Scholes & Merton.
     #[allow(non_snake_case)]
     pub fn price(is_call: bool, S: f64, K: f64, t: f64, r: f64, b: f64, v: f64) -> f64 {
         let d1 = ((S / K).ln() + t * (b + (v * v) / 2.0)) / (v * t.sqrt());

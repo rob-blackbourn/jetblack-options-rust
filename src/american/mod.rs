@@ -1,4 +1,4 @@
-//! American Option Valuations
+//! American option valuations
 
 mod barone_adesi_whaley;
 pub use barone_adesi_whaley::BaroneAdesiWhaley;
