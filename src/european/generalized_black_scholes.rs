@@ -688,7 +688,21 @@ mod tests {
         ] {
             let b = r - q;
             let actual = GeneralizedBlackScholes::price(is_call, S, K, t, r, b, v);
-            assert!(is_close_to(actual, expected, f64::EPSILON));
+            assert!(
+                is_close_to(actual, expected, f64::EPSILON),
+                "price({}, {}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
+                is_call,
+                S,
+                K,
+                t,
+                r,
+                b,
+                v,
+                actual,
+                expected,
+                (expected - actual).abs(),
+                f64::EPSILON
+            );
         }
     }
 
