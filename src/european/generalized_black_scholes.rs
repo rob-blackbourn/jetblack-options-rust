@@ -1678,7 +1678,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.639625858611978,
-                1e-4,
+                1e-6,
             ),
             (
                 false,
@@ -1689,7 +1689,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -1.639625858611978,
-                1e-4,
+                1e-6,
             ),
             (
                 true,
@@ -1700,7 +1700,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.2088059253458516,
-                1e-4,
+                1e-6,
             ),
             (
                 false,
@@ -1711,7 +1711,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 -0.2088059253458516,
-                1e-4,
+                1e-6,
             ),
             (
                 true,
@@ -1722,7 +1722,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.0253158998215026,
-                1e-4,
+                1e-7,
             ),
             (
                 false,
@@ -1733,7 +1733,7 @@ mod tests {
                 6.0 / 12.0,
                 0.125,
                 2.0253158998215026,
-                1e-4,
+                1e-7,
             ),
         ] {
             let b = r - q;
@@ -1754,7 +1754,7 @@ mod tests {
             );
 
             let numeric =
-                ng[&is_call].vanna(S, K, t, r, b, v, 0.01, 0.001, DifferenceMethod::Central);
+                ng[&is_call].vanna(S, K, t, r, b, v, 0.001, 0.0001, DifferenceMethod::Central);
             assert!(
                 is_close_to(numeric, analytic, threshold),
                 "[{}].vanna({}, {}, {}, {}, {}, {}) -> {} (expected: {}, diff: {:e}, threshold: {:e})",
