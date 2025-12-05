@@ -85,7 +85,7 @@ impl GarmanKohlhagen {
     }
 
     /// Return a struct to calculate greeks numerically using finite difference methods.
-    pub fn fdm_greeks(is_call: bool) -> FdmWithDividendYield {
+    pub fn fdm_greeks<'a>(is_call: bool) -> FdmWithDividendYield<'a> {
         #[allow(non_snake_case)]
         FdmWithDividendYield::new(move |S: f64, K: f64, t: f64, r: f64, rf: f64, v: f64| {
             GarmanKohlhagen::price(is_call, S, K, t, r, rf, v)

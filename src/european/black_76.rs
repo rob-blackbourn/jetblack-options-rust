@@ -25,22 +25,21 @@
 //! $$
 //! \Phi(x) &= \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-\frac{1}{2} y^2} \,dy = 1 - \frac{1}{\sqrt{2\pi}} \int_x^\infty e^{-\frac{1}{2} y^2} \,dy
 //! $$
-//!
-//! The following arguments are used in this module.
-//!
-//! * is_call (bool): True for a call, false for a put.
-//! * F (f64): The price of the future.
-//! * K (f64): The strike price.
-//! * t (f64): The time to expiry in years.
-//! * r (f64): The risk free rate.
-//! * v (f64): The asset volatility.
-//! * max_iterations (usize): The maximum number of iterations before a price is returned.
-//! * epsilon (f64): The largest acceptable error.
 
 use crate::distributions::{cdf, pdf};
 use crate::fdm::FdmWithoutCarry;
 use crate::implied_volatility::solve_ivol;
 
+/// The following arguments are used in this module.
+///
+/// * is_call (bool): True for a call, false for a put.
+/// * F (f64): The price of the future.
+/// * K (f64): The strike price.
+/// * t (f64): The time to expiry in years.
+/// * r (f64): The risk free rate.
+/// * v (f64): The asset volatility.
+/// * max_iterations (usize): The maximum number of iterations before a price is returned.
+/// * epsilon (f64): The largest acceptable error.
 pub struct Black76 {}
 
 impl Black76 {
@@ -90,7 +89,7 @@ impl Black76 {
     }
 
     /// Return a struct to calculate greeks numerically using finite difference methods.
-    pub fn fdm_greeks(is_call: bool) -> FdmWithoutCarry {
+    pub fn fdm_greeks<'a>(is_call: bool) -> FdmWithoutCarry<'a> {
         #[allow(non_snake_case)]
         FdmWithoutCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64| {
             Black76::price(is_call, S, K, t, r, b)

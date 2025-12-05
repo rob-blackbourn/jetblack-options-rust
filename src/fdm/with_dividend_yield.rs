@@ -3,15 +3,15 @@
 use crate::fdm::DifferenceMethod;
 
 /// A struct for calculating option sensitivities using finite difference methods for pricers using dividend yield.
-pub struct FdmWithDividendYield {
+pub struct FdmWithDividendYield<'a> {
     /// The pricing function.
     ///
     /// fn price(S: 64, K: f64, t, r: f64, q: f64, v: f64) -> f64
-    pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64>,
+    pub price: Box<dyn Fn(f64, f64, f64, f64, f64, f64) -> f64 + 'a>,
 }
 
-impl FdmWithDividendYield {
-    pub fn new(price: impl Fn(f64, f64, f64, f64, f64, f64) -> f64 + 'static) -> Self {
+impl<'a> FdmWithDividendYield<'a> {
+    pub fn new(price: impl Fn(f64, f64, f64, f64, f64, f64) -> f64 + 'a) -> Self {
         FdmWithDividendYield {
             price: Box::new(price),
         }
