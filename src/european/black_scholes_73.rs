@@ -75,7 +75,7 @@ impl BlackScholes73 {
     }
 
     /// Make a struct to generate greeks numerically using finite difference methods.
-    pub fn fdm_greeks(is_call: bool) -> FdmWithoutCarry {
+    pub fn fdm_greeks<'a>(is_call: bool) -> FdmWithoutCarry<'a> {
         // Normalize the price function to match that required by the finite
         // difference methods.
         #[allow(non_snake_case)]

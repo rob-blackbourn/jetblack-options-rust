@@ -159,7 +159,7 @@ impl BaroneAdesiWhaley {
     }
 
     /// Return a struct to calculate greeks numerically using finite difference methods.
-    pub fn fdm_greeks(is_call: bool) -> FdmWithCarry {
+    pub fn fdm_greeks<'a>(is_call: bool) -> FdmWithCarry<'a> {
         #[allow(non_snake_case)]
         FdmWithCarry::new(move |S: f64, K: f64, t: f64, r: f64, b: f64, v: f64| {
             BaroneAdesiWhaley::price(is_call, S, K, t, r, b, v)

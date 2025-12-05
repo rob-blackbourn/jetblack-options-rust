@@ -85,7 +85,7 @@ impl BlackScholesMerton {
     }
 
     /// Return a struct to calculate greeks numerically using finite difference methods.
-    pub fn fdm_greeks(is_call: bool) -> FdmWithDividendYield {
+    pub fn fdm_greeks<'a>(is_call: bool) -> FdmWithDividendYield<'a> {
         // Normalize the price function to match that required by the finite
         // difference methods.
         #[allow(non_snake_case)]
